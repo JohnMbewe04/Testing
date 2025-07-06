@@ -14,45 +14,55 @@ tabs = st.tabs(["🎬 Media Style Match", "👗 Fashion & Brands", "🧍‍♂�
 # === Tab 1: Media Style Match ===
 with tabs[0]:
     st.header("🎥 Movie & Song Recommendations")
-    st.markdown("Input your favorite movie or song and we'll find your aesthetic twins!")
+    st.markdown("Input your favorite movie (by name or genre) and we'll find your aesthetic twins!")
 
     # Input fields
-    movie_input = st.text_input("🎬 Enter a movie title:", "")
+    movie_input = st.text_input("🎬 Enter a movie title or genre (e.g., Inception or comedy):", "")
     song_input = st.text_input("🎵 Enter a song title (optional):", "")
     
     # Recommendation logic
     if movie_input:
         if st.button("Get Movie Recommendations"):
-            url = "https://staging.api.qloo.com/v2/recommendations"
+            url = "https://hackathon.api.qloo.com/v2/insights/"
             headers = {
-                "x-api-key": API_KEY,
-                "Content-Type": "application/json"
+                "x-api-key": API_KEY
             }
-            data = {
-                "type": "urn:entity:movie",
-                "inputs": [
-                    {
-                        "type": "urn:entity:movie",
-                        "name": movie_input
-                    }
-                ]
-            }
+
+            # Detect if input is a genre or title (simple heuristic: lowercase and short = genre)
+            if movie_input.strip().lower() in [
+                "action", "comedy", "drama", "horror", "romance", "thriller", 
+                "fantasy", "sci-fi", "animation", "crime", "documentary"
+            ]:
+                filter_type = "urn:entity:movie"
+                filter_tag = f"urn:tag:genre:media:{movie_input.strip().lower()}"
+                params = {
+                    "filter.type": filter_type,
+                    "filter.tags": filter_tag
+                }
+                query_type = "genre"
+            else:
+                # Treat as a title name match
+                params = {
+                    "filter.type": "urn:entity:movie",
+                    "filter.name": movie_input.strip()
+                }
+                query_type = "title"
 
             with st.spinner("Fetching recommendations..."):
-                response = requests.post(url, headers=headers, json=data)
+                response = requests.get(url, headers=headers, params=params)
 
             if response.status_code == 200:
-                results = response.json()
-                recs = results.get("recommendations", [])
+                data = response.json()
+                insights = data.get("insights", [])
 
-                if recs:
-                    st.success("🎯 Here are some recommended movies based on your input:")
-                    for r in recs:
-                        st.markdown(f"- 🎬 **{r.get('name')}**")
+                if insights:
+                    st.success(f"🎯 Found {len(insights)} recommendations based on your {query_type}:")
+                    for item in insights:
+                        st.markdown(f"- 🎬 **{item.get('name', 'Unknown')}**")
                 else:
-                    st.warning("No movie recommendations found.")
+                    st.warning("No results found. Try another movie or genre.")
             else:
-                st.error(f"API Error: {response.status_code}")
+                st.error(f"API Error: {response.status_code} - {response.text}")
 
     elif song_input:
         st.info("🎧 Song recommendations coming soon!")
