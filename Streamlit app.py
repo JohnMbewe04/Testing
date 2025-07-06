@@ -1,5 +1,7 @@
 import streamlit as st
 
+API_KEY = st.secrets["api"]["qloo_key"]
+
 # App Title
 st.set_page_config(page_title="AI StyleTwin", layout="wide")
 st.title("🧠 AI StyleTwin")
