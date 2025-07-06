@@ -1,11 +1,7 @@
 import streamlit as st
+import requests
 
 API_KEY = st.secrets["api"]["qloo_key"]
-
-try:
-    st.write("🔑 Your API Key is:", st.secrets["api"]["qloo_key"])
-except Exception as e:
-    st.error(f"🚨 Could not access API key: {e}")
 
 # App Title
 st.set_page_config(page_title="AI StyleTwin", layout="wide")
@@ -20,13 +16,46 @@ with tabs[0]:
     st.header("🎥 Movie & Song Recommendations")
     st.markdown("Input your favorite movie or song and we'll find your aesthetic twins!")
 
-    # Placeholder input
+    # Input fields
     movie_input = st.text_input("🎬 Enter a movie title:", "")
     song_input = st.text_input("🎵 Enter a song title (optional):", "")
     
-    # Placeholder output
-    if movie_input or song_input:
-        st.info("🎯 This is where your recommendations will show up.")
+    # Recommendation logic
+    if movie_input:
+        if st.button("Get Movie Recommendations"):
+            url = "https://staging.api.qloo.com/v2/recommendations"
+            headers = {
+                "x-api-key": API_KEY,
+                "Content-Type": "application/json"
+            }
+            data = {
+                "type": "urn:entity:movie",
+                "inputs": [
+                    {
+                        "type": "urn:entity:movie",
+                        "name": movie_input
+                    }
+                ]
+            }
+
+            with st.spinner("Fetching recommendations..."):
+                response = requests.post(url, headers=headers, json=data)
+
+            if response.status_code == 200:
+                results = response.json()
+                recs = results.get("recommendations", [])
+
+                if recs:
+                    st.success("🎯 Here are some recommended movies based on your input:")
+                    for r in recs:
+                        st.markdown(f"- 🎬 **{r.get('name')}**")
+                else:
+                    st.warning("No movie recommendations found.")
+            else:
+                st.error(f"API Error: {response.status_code}")
+
+    elif song_input:
+        st.info("🎧 Song recommendations coming soon!")
 
 # === Tab 2: Fashion & Brands ===
 with tabs[1]:
