@@ -2,6 +2,11 @@ import streamlit as st
 
 API_KEY = st.secrets["api"]["qloo_key"]
 
+try:
+    st.write("🔑 Your API Key is:", st.secrets["api"]["qloo_key"])
+except Exception as e:
+    st.error(f"🚨 Could not access API key: {e}")
+
 # App Title
 st.set_page_config(page_title="AI StyleTwin", layout="wide")
 st.title("🧠 AI StyleTwin")
