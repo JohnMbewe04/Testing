@@ -4,6 +4,56 @@ import requests
 QLOO_API_KEY = st.secrets["api"]["qloo_key"]
 TMDB_API_KEY = st.secrets["api"]["tmdb_key"]
 
+# Map Qloo tags to fashion archetypes
+def get_fashion_archetypes(input_type, value):
+    tag_to_style = {
+        "quirky": ["indie", "retro", "normcore"],
+        "romantic": ["cottagecore", "vintage", "soft girl"],
+        "gritty": ["grunge", "punk", "utilitarian"],
+        "futuristic": ["techwear", "cyberpunk"],
+        "dark": ["gothic", "alt", "emo"],
+        "elegant": ["classic", "preppy", "minimalist"],
+        "rebellious": ["punk", "streetwear", "biker"],
+        "heartwarming": ["softcore", "cozy", "vintage"],
+        "edgy": ["streetwear", "alt", "y2k"],
+        "whimsical": ["fairycore", "boho", "eclectic"],
+        "minimalist": ["scandi", "normcore", "clean girl"],
+        "dramatic": ["avant-garde", "glam", "maximalist"],
+        "nostalgic": ["retro", "vintage", "90s-core"],
+        "intense": ["military", "dark academia", "utilitarian"],
+        "surreal": ["artcore", "experimental", "conceptual"]
+    }
+
+    genre_to_tags = {
+        "comedy": ["quirky", "heartwarming", "awkward"],
+        "horror": ["dark", "intense", "surreal"],
+        "romance": ["romantic", "elegant", "whimsical"],
+        "sci-fi": ["futuristic", "surreal", "dramatic"],
+        "drama": ["emotional", "elegant", "nostalgic"],
+        "action": ["gritty", "rebellious", "intense"],
+        "animation": ["whimsical", "quirky", "nostalgic"],
+        "crime": ["gritty", "dark", "minimalist"]
+    }
+
+    mbti_to_tags = {
+        "infp": ["whimsical", "romantic", "nostalgic"],
+        "intj": ["minimalist", "dark", "futuristic"],
+        "enfp": ["quirky", "dramatic", "eclectic"],
+        "istp": ["gritty", "rebellious", "utilitarian"]
+    }
+
+    tags = []
+    if input_type == "genre":
+        tags = genre_to_tags.get(value.lower(), [])
+    elif input_type == "mbti":
+        tags = mbti_to_tags.get(value.lower(), [])
+
+    styles = set()
+    for tag in tags:
+        styles.update(tag_to_style.get(tag, []))
+
+    return list(styles)
+
 # Detect user's country from IP
 def get_user_country():
     try:
@@ -175,10 +225,29 @@ with tabs[0]:
 # === Tab 2: Fashion & Brands ===
 with tabs[1]:
     st.header("👚 Clothing & Brand Recommendations")
-    st.markdown("Find clothing brands or outfits that match your media style.")
-    st.selectbox("Pick a theme from your recommended movies or songs", ["Casual", "Vintage", "Grunge", "Avant-Garde"])
-    st.info("🛍️ Clothing suggestions will appear here.")
+    st.markdown("Find clothing brands or outfits that match your media style or personality.")
 
+    input_type = st.radio("Choose your input type:", ["Genre", "MBTI"])
+    if input_type == "Genre":
+        selected = st.selectbox("🎬 Select a genre:", genre_options)
+        input_key = "genre"
+    else:
+        selected = st.text_input("🧠 Enter your MBTI type (e.g. INFP):")
+        input_key = "mbti"
+
+    if st.button("Find My StyleTwin"):
+        if selected:
+            styles = get_fashion_archetypes(input_key, selected)
+            if styles:
+                st.success("🎨 Your fashion archetypes:")
+                for style in styles:
+                    st.markdown(f"- **{style.title()}**")
+                st.info("🛍️ Brand and outfit suggestions coming soon!")
+            else:
+                st.warning("No styles found for that input.")
+        else:
+            st.warning("Please enter a valid input.")
+            
 # === Tab 3: AI Fitting Room ===
 with tabs[2]:
     st.header("🧍 Virtual Fitting Simulation")
