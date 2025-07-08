@@ -1,6 +1,8 @@
 import streamlit as st
 import requests
 
+genre_options = ["comedy", "horror", "romance", "action", "animation", "crime", "sci-fi", "drama"]
+
 QLOO_API_KEY = st.secrets["api"]["qloo_key"]
 TMDB_API_KEY = st.secrets["api"]["tmdb_key"]
 
@@ -84,7 +86,6 @@ with tabs[0]:
     st.markdown("Input your favorite **movie title** or select a **genre** to get aesthetic recommendations.")
 
     movie_input = st.text_input("🎬 Enter a movie title:", "")
-    genre_options = ["comedy", "horror", "romance", "action", "animation", "crime", "sci-fi", "drama"]
     selected_genre = st.selectbox("Or select a genre:", [""] + genre_options)
 
     if st.button("Get Recommendations"):
