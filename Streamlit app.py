@@ -7,7 +7,7 @@ QLOO_API_KEY = st.secrets["api"]["qloo_key"]
 TMDB_API_KEY = st.secrets["api"]["tmdb_key"]
 
 # Map Qloo tags to fashion archetypes
-def map_tags_to_styles(tags):
+def get_fashion_archetypes(input_type, value):
     tag_to_style = {
         "quirky": ["indie", "retro", "normcore"],
         "romantic": ["cottagecore", "vintage", "soft girl"],
