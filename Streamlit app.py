@@ -186,4 +186,9 @@ with tabs[2]:
     uploaded_file = st.file_uploader("📸 Upload a full-body photo (optional)", type=["jpg", "png"])
     if uploaded_file:
         st.image(uploaded_file, caption="Your uploaded photo", use_column_width=True)
-    st.info("🪞 AI-generated
+    st.info("🪞 AI-generated virtual fitting results will appear here.")
+
+    # Footer
+    st.markdown("---")
+    st.markdown("Made with 💡 for the hackathon.")
+
