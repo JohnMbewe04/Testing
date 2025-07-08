@@ -299,19 +299,21 @@ with tabs[1]:
         if selected:
             styles = get_fashion_archetypes(input_key, selected)
             if styles:
-                    st.success("🎨 Your fashion archetypes:")
-                    for style in styles:
-                        st.markdown(f"### 👗 {style.title()}")
-                
-                        # ✅ Build image URL
-                        image_url = style_images.get(style.lower(), "https://via.placeholder.com/400x500?text=Style+Preview")
-                
-                        st.image(image_url, caption=f"{style.title()} Look", use_container_width=True)
-                            
-                        # ✅ Suggested brands
-                        brands = style_to_brands.get(style.lower(), ["Coming soon..."])
-                        st.markdown(f"**Suggested Brands:** {', '.join(brands)}")
-                        st.markdown("---")
+                st.success("🎨 Your fashion archetypes:")
+                for style in styles:
+                    st.markdown(f"### 👗 {style.title()}")
+
+                    # ✅ Build Unsplash image URL dynamically
+                    query = style.replace(" ", "+")
+                    image_url = f"https://source.unsplash.com/400x500/?{query},fashion"
+
+                    # ✅ Display image
+                    st.image(image_url, caption=f"{style.title()} Look", use_container_width=True)
+
+                    # ✅ Suggested brands
+                    brands = style_to_brands.get(style.lower(), ["Coming soon..."])
+                    st.markdown(f"**Suggested Brands:** {', '.join(brands)}")
+                    st.markdown("---")
             else:
                 st.warning("No styles found for that input.")
         else:
