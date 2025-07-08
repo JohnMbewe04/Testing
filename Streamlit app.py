@@ -44,6 +44,7 @@ style_to_brands = {
 
 QLOO_API_KEY = st.secrets["api"]["qloo_key"]
 TMDB_API_KEY = st.secrets["api"]["tmdb_key"]
+UNSPLASH_ACCESS_KEY = st.secrets["api"]["unsplash_key"]
 
 # Map Qloo tags to fashion archetypes
 def get_fashion_archetypes(input_type, value):
@@ -289,12 +290,22 @@ with tabs[1]:
                 for style in styles:
                     st.markdown(f"### 👗 {style.title()}")
 
-                    # ✅ Build Unsplash image URL dynamically
-                    query = style.replace(" ", "+")
-                    image_url = f"https://source.unsplash.com/400x500/?{query},fashion"
+                    # 🔍 Use Unsplash API to fetch the image
+                    unsplash_key = st.secrets["api"]["unsplash_key"]
+                    headers = {"Authorization": f"Client-ID {unsplash_key}"}
+                    params = {"query": f"{style} fashion", "per_page": 1}
+                    unsplash_response = requests.get("https://api.unsplash.com/search/photos", headers=headers, params=params)
 
-                    # ✅ Display image
-                    st.image(image_url, caption=f"{style.title()} Look", use_container_width=True)
+                    image_url = None
+                    if unsplash_response.status_code == 200:
+                        results = unsplash_response.json().get("results", [])
+                        if results:
+                            image_url = results[0]["urls"]["regular"]
+
+                    if image_url:
+                        st.image(image_url, caption=f"{style.title()} Look", use_container_width=True)
+                    else:
+                        st.warning("⚠️ No image found for this style.")
 
                     # ✅ Suggested brands
                     brands = style_to_brands.get(style.lower(), ["Coming soon..."])
@@ -304,6 +315,7 @@ with tabs[1]:
                 st.warning("No styles found for that input.")
         else:
             st.warning("Please enter a valid input.")
+
             
 # === Tab 3: AI Fitting Room ===
 with tabs[2]:
