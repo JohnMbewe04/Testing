@@ -277,24 +277,28 @@ with tabs[1]:
         if selected:
             styles = get_fashion_archetypes(input_key, selected)
             if styles:
-                st.success("🎨 Your fashion archetypes:")
-                for style in styles:
-                    st.markdown(f"### 👗 {style.title()}")
-
-                    # ✅ Fix: Build image URL
-                    query = style.replace(" ", "+")
-                    image_url = f"https://source.unsplash.com/400x500/?{query},fashion"
-
-                    # ✅ Fix: Proper indentation and fallback
-                    try:
-                        st.image(image_url, caption=f"{style.title()} Look", use_container_width=True)
-                    except:
-                        st.image("https://via.placeholder.com/400x500?text=Style+Preview", caption="Preview Unavailable", use_container_width=True)
-
-                    # Suggested brands
-                    brands = style_to_brands.get(style.lower(), ["Coming soon..."])
-                    st.markdown(f"**Suggested Brands:** {', '.join(brands)}")
-                    st.markdown("---")
+                    st.success("🎨 Your fashion archetypes:")
+                    for style in styles:
+                        st.markdown(f"### 👗 {style.title()}")
+                
+                        # ✅ Build image URL
+                        query = style.replace(" ", "+")
+                        image_url = f"https://source.unsplash.com/featured/400x500/?{query},fashion"
+                
+                        # ✅ Check if image is available
+                        try:
+                            response = requests.get(image_url, timeout=5)
+                            if response.status_code == 200:
+                                st.image(image_url, caption=f"{style.title()} Look", use_container_width=True)
+                            else:
+                                st.image("https://via.placeholder.com/400x500?text=No+Image+Found", caption="Preview Unavailable", use_container_width=True)
+                        except:
+                            st.image("https://via.placeholder.com/400x500?text=No+Image+Found", caption="Preview Unavailable", use_container_width=True)
+                
+                        # ✅ Suggested brands
+                        brands = style_to_brands.get(style.lower(), ["Coming soon..."])
+                        st.markdown(f"**Suggested Brands:** {', '.join(brands)}")
+                        st.markdown("---")
             else:
                 st.warning("No styles found for that input.")
         else:
