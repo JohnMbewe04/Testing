@@ -83,7 +83,11 @@ with tabs[0]:
                             title = rec.get("title", "Unknown Title")
                             rating = rec.get("vote_average", "N/A")
                             votes = rec.get("vote_count", "N/A")
-                            st.markdown(f"- **🎬 {title}** — {rating} ⭐ ({votes} votes)")
+                            poster_path = rec.get("poster_path")
+                            if poster_path:
+                                st.image(f"https://image.tmdb.org/t/p/w200{poster_path}", width=120)
+                            st.markdown(f"**🎬 {title}** — {rating} ⭐ ({votes} votes)")
+                            st.markdown("---")
                     else:
                         st.warning("No fallback recommendations found on TMDb.")
                 else:
@@ -96,9 +100,46 @@ with tabs[0]:
                 "filter.type": "urn:entity:movie",
                 "filter.tags": f"urn:tag:genre:media:{selected_genre}"
             }
-            with st.spinner("🎞️ Fetching genre-based recommendations..."):
+            with st.spinner("🎞️ Fetching genre-based recommendations from Qloo..."):
                 response = requests.get(url, headers=headers, params=params)
 
+            if response.status_code != 200 or not response.json().get("insights"):
+                fallback_used = True
+                st.warning("Qloo returned no genre-based results. Using TMDb as fallback.")
+
+                # TMDb genre fallback
+                genre_map = {
+                    "action": 28, "animation": 16, "comedy": 35, "crime": 80,
+                    "drama": 18, "horror": 27, "romance": 10749, "sci-fi": 878
+                }
+                genre_id = genre_map.get(selected_genre.lower())
+                if genre_id:
+                    tmdb_genre_url = "https://api.themoviedb.org/3/discover/movie"
+                    tmdb_params = {
+                        "api_key": TMDB_API_KEY,
+                        "with_genres": genre_id,
+                        "sort_by": "popularity.desc",
+                        "language": "en-US",
+                        "page": 1
+                    }
+                    tmdb_response = requests.get(tmdb_genre_url, params=tmdb_params)
+                    tmdb_recs = tmdb_response.json().get("results", [])
+
+                    if tmdb_recs:
+                        st.success(f"🎬 Popular {selected_genre.title()} Movies (via TMDb):")
+                        for rec in tmdb_recs[:10]:
+                            title = rec.get("title", "Unknown Title")
+                            rating = rec.get("vote_average", "N/A")
+                            votes = rec.get("vote_count", "N/A")
+                            poster_path = rec.get("poster_path")
+                            if poster_path:
+                                st.image(f"https://image.tmdb.org/t/p/w200{poster_path}", width=120)
+                            st.markdown(f"**🎬 {title}** — {rating} ⭐ ({votes} votes)")
+                            st.markdown("---")
+                    else:
+                        st.warning("No fallback genre results found on TMDb.")
+                else:
+                    st.error("Genre not recognized.")
         else:
             st.warning("Please enter a movie title or select a genre.")
 
