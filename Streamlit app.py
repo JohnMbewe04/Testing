@@ -280,13 +280,16 @@ with tabs[1]:
                 st.success("🎨 Your fashion archetypes:")
                 for style in styles:
                     st.markdown(f"### 👗 {style.title()}")
-                    
-                    # Outfit image from Unsplash
-                    query = style.replace(" ", "+")  # Replace spaces with + for URL encoding
-                        try:
-                            st.image(image_url, caption=f"{style.title()} Look", use_container_width=True)
-                        except:
-                            st.image("https://via.placeholder.com/400x500?text=Style+Preview", caption="Preview Unavailable", use_container_width=True)
+
+                    # ✅ Fix: Build image URL
+                    query = style.replace(" ", "+")
+                    image_url = f"https://source.unsplash.com/400x500/?{query},fashion"
+
+                    # ✅ Fix: Proper indentation and fallback
+                    try:
+                        st.image(image_url, caption=f"{style.title()} Look", use_container_width=True)
+                    except:
+                        st.image("https://via.placeholder.com/400x500?text=Style+Preview", caption="Preview Unavailable", use_container_width=True)
 
                     # Suggested brands
                     brands = style_to_brands.get(style.lower(), ["Coming soon..."])
