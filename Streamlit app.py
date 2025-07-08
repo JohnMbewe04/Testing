@@ -7,7 +7,7 @@ QLOO_API_KEY = st.secrets["api"]["qloo_key"]
 TMDB_API_KEY = st.secrets["api"]["tmdb_key"]
 
 # Map Qloo tags to fashion archetypes
-def get_fashion_archetypes(input_type, value):
+def map_tags_to_styles(tags):
     tag_to_style = {
         "quirky": ["indie", "retro", "normcore"],
         "romantic": ["cottagecore", "vintage", "soft girl"],
@@ -25,36 +25,32 @@ def get_fashion_archetypes(input_type, value):
         "intense": ["military", "dark academia", "utilitarian"],
         "surreal": ["artcore", "experimental", "conceptual"]
     }
-
-    genre_to_tags = {
-        "comedy": ["quirky", "heartwarming", "awkward"],
-        "horror": ["dark", "intense", "surreal"],
-        "romance": ["romantic", "elegant", "whimsical"],
-        "sci-fi": ["futuristic", "surreal", "dramatic"],
-        "drama": ["emotional", "elegant", "nostalgic"],
-        "action": ["gritty", "rebellious", "intense"],
-        "animation": ["whimsical", "quirky", "nostalgic"],
-        "crime": ["gritty", "dark", "minimalist"]
-    }
-
-    mbti_to_tags = {
-        "infp": ["whimsical", "romantic", "nostalgic"],
-        "intj": ["minimalist", "dark", "futuristic"],
-        "enfp": ["quirky", "dramatic", "eclectic"],
-        "istp": ["gritty", "rebellious", "utilitarian"]
-    }
-
-    tags = []
-    if input_type == "genre":
-        tags = genre_to_tags.get(value.lower(), [])
-    elif input_type == "mbti":
-        tags = mbti_to_tags.get(value.lower(), [])
-
     styles = set()
     for tag in tags:
-        styles.update(tag_to_style.get(tag, []))
-
+        styles.update(tag_to_style.get(tag.lower(), []))
     return list(styles)
+
+def get_tags_from_qloo_genre(genre):
+    url = "https://hackathon.api.qloo.com/v2/insights/"
+    headers = {"x-api-key": QLOO_API_KEY}
+    params = {
+        "filter.type": "urn:entity:movie",
+        "filter.tags": f"urn:tag:genre:media:{genre.lower()}"
+    }
+    try:
+        response = requests.get(url, headers=headers, params=params)
+        if response.status_code == 200:
+            insights = response.json().get("insights", [])
+            tag_counts = {}
+            for item in insights:
+                for tag in item.get("tags", []):
+                    tag_counts[tag] = tag_counts.get(tag, 0) + 1
+            sorted_tags = sorted(tag_counts, key=tag_counts.get, reverse=True)
+            return sorted_tags[:5]  # top 5 tags
+        else:
+            return []
+    except:
+        return []
 
 # Detect user's country from IP
 def get_user_country():
@@ -231,21 +227,35 @@ with tabs[1]:
     input_type = st.radio("Choose your input type:", ["Genre", "MBTI"])
     if input_type == "Genre":
         selected = st.selectbox("🎬 Select a genre:", genre_options)
-        input_key = "genre"
     else:
         selected = st.text_input("🧠 Enter your MBTI type (e.g. INFP):")
-        input_key = "mbti"
 
     if st.button("Find My StyleTwin"):
         if selected:
-            styles = get_fashion_archetypes(input_key, selected)
-            if styles:
-                st.success("🎨 Your fashion archetypes:")
-                for style in styles:
-                    st.markdown(f"- **{style.title()}**")
-                st.info("🛍️ Brand and outfit suggestions coming soon!")
+            if input_type == "Genre":
+                tags = get_tags_from_qloo_genre(selected)
             else:
-                st.warning("No styles found for that input.")
+                mbti_to_tags = {
+                    "infp": ["whimsical", "romantic", "nostalgic"],
+                    "intj": ["minimalist", "dark", "futuristic"],
+                    "enfp": ["quirky", "dramatic", "eclectic"],
+                    "istp": ["gritty", "rebellious", "utilitarian"]
+                }
+                tags = mbti_to_tags.get(selected.lower(), [])
+
+            if tags:
+                styles = map_tags_to_styles(tags)
+                if styles:
+                    st.success("🎨 Your fashion archetypes:")
+                    for style in styles:
+                        st.markdown(f"### 👗 {style.title()}")
+                        st.image(f"https://source.unsplash.com/400x500/?{style},fashion", caption=f"{style.title()} Look", use_column_width=True)
+                        st.markdown(f"**Suggested Brands:** _{', '.join(['Brand A', 'Brand B', 'Brand C'])}_")
+                        st.markdown("---")
+                else:
+                    st.warning("No fashion styles matched your aesthetic.")
+            else:
+                st.warning("No aesthetic tags found for that input.")
         else:
             st.warning("Please enter a valid input.")
             
