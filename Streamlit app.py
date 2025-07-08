@@ -282,7 +282,7 @@ with tabs[1]:
                     st.markdown(f"### 👗 {style.title()}")
                     
                     # Outfit image from Unsplash
-                    st.image(f"https://source.unsplash.com/400x500/?{style},fashion", caption=f"{style.title()} Look", use_column_width=True)
+                    st.image(f"https://source.unsplash.com/400x500/?{style},fashion", caption=f"{style.title()} Look", use_container_width=True)
                     
                     # Suggested brands
                     brands = style_to_brands.get(style.lower(), ["Coming soon..."])
