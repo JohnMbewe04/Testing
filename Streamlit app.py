@@ -2,6 +2,7 @@ import streamlit as st
 import requests
 
 genre_options = ["comedy", "horror", "romance", "action", "animation", "crime", "sci-fi", "drama"]
+
 style_to_brands = {
         "indie": ["Urban Outfitters", "Monki", "Lazy Oaf"],
         "retro": ["Beyond Retro", "Levi's", "Dickies"],
@@ -40,6 +41,20 @@ style_to_brands = {
         "experimental": ["Maison Margiela", "Craig Green", "Rick Owens"],
         "conceptual": ["Comme des Garçons", "Yohji Yamamoto", "Iris van Herpen"]
     }
+
+style_images = {
+    "grunge": "https://i.imgur.com/3ZQ3Z1Z.jpg",
+    "cottagecore": "https://i.imgur.com/7kY4Z9H.jpg",
+    "techwear": "https://i.imgur.com/5zX9ZkF.jpg",
+    "vintage": "https://i.imgur.com/8zY3z8P.jpg",
+    "punk": "https://i.imgur.com/2VZ3Z1X.jpg",
+    "minimalist": "https://i.imgur.com/6kY3Z9H.jpg",
+    "fairycore": "https://i.imgur.com/4kY3Z9H.jpg",
+    "streetwear": "https://i.imgur.com/1kY3Z9H.jpg",
+    "gothic": "https://i.imgur.com/9kY3Z9H.jpg",
+    "soft girl": "https://i.imgur.com/0kY3Z9H.jpg"
+    # Add more as needed
+}
 
 QLOO_API_KEY = st.secrets["api"]["qloo_key"]
 TMDB_API_KEY = st.secrets["api"]["tmdb_key"]
@@ -108,6 +123,13 @@ def get_streaming_platforms(movie_id, country_code):
     response = requests.get(url, params=params).json()
     platforms = response.get("results", {}).get(country_code, {}).get("flatrate", [])
     return [p["provider_name"] for p in platforms]
+
+@st.cache_data(show_spinner=False)
+def check_image(url):
+    try:
+        return requests.get(url, timeout=5).status_code == 200
+    except:
+        return False
 
 # App Title
 st.set_page_config(page_title="AI StyleTwin", layout="wide")
@@ -282,19 +304,10 @@ with tabs[1]:
                         st.markdown(f"### 👗 {style.title()}")
                 
                         # ✅ Build image URL
-                        query = style.replace(" ", "+")
-                        image_url = f"https://source.unsplash.com/featured/400x500/?{query},fashion"
+                        image_url = style_images.get(style.lower(), "https://via.placeholder.com/400x500?text=Style+Preview")
                 
-                        # ✅ Check if image is available
-                        try:
-                            response = requests.get(image_url, timeout=5)
-                            if response.status_code == 200:
-                                st.image(image_url, caption=f"{style.title()} Look", use_container_width=True)
-                            else:
-                                st.image("https://via.placeholder.com/400x500?text=No+Image+Found", caption="Preview Unavailable", use_container_width=True)
-                        except:
-                            st.image("https://via.placeholder.com/400x500?text=No+Image+Found", caption="Preview Unavailable", use_container_width=True)
-                
+                        st.image(image_url, caption=f"{style.title()} Look", use_container_width=True)
+                            
                         # ✅ Suggested brands
                         brands = style_to_brands.get(style.lower(), ["Coming soon..."])
                         st.markdown(f"**Suggested Brands:** {', '.join(brands)}")
