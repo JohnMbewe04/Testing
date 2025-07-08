@@ -42,20 +42,6 @@ style_to_brands = {
         "conceptual": ["Comme des Garçons", "Yohji Yamamoto", "Iris van Herpen"]
     }
 
-style_images = {
-    "grunge": "https://i.imgur.com/3ZQ3Z1Z.jpg",
-    "cottagecore": "https://i.imgur.com/7kY4Z9H.jpg",
-    "techwear": "https://i.imgur.com/5zX9ZkF.jpg",
-    "vintage": "https://i.imgur.com/8zY3z8P.jpg",
-    "punk": "https://i.imgur.com/2VZ3Z1X.jpg",
-    "minimalist": "https://i.imgur.com/6kY3Z9H.jpg",
-    "fairycore": "https://i.imgur.com/4kY3Z9H.jpg",
-    "streetwear": "https://i.imgur.com/1kY3Z9H.jpg",
-    "gothic": "https://i.imgur.com/9kY3Z9H.jpg",
-    "soft girl": "https://i.imgur.com/0kY3Z9H.jpg"
-    # Add more as needed
-}
-
 QLOO_API_KEY = st.secrets["api"]["qloo_key"]
 TMDB_API_KEY = st.secrets["api"]["tmdb_key"]
 
