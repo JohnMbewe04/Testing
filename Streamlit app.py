@@ -25,6 +25,44 @@ def get_fashion_archetypes(input_type, value):
         "intense": ["military", "dark academia", "utilitarian"],
         "surreal": ["artcore", "experimental", "conceptual"]
     }
+    style_to_brands = {
+        "indie": ["Urban Outfitters", "Monki", "Lazy Oaf"],
+        "retro": ["Beyond Retro", "Levi's", "Dickies"],
+        "normcore": ["Uniqlo", "Everlane", "Muji"],
+        "cottagecore": ["Doen", "Christy Dawn", "Reformation"],
+        "vintage": ["Depop", "Thrifted", "Rokit"],
+        "soft girl": ["Brandy Melville", "YesStyle", "Princess Polly"],
+        "grunge": ["Killstar", "Disturbia", "Hot Topic"],
+        "punk": ["Tripp NYC", "Punk Rave", "AllSaints"],
+        "utilitarian": ["Carhartt", "Acronym", "Nike ACG"],
+        "techwear": ["Acronym", "Nike ISPA", "Guerrilla Group"],
+        "cyberpunk": ["Demobaza", "Y-3", "Rick Owens"],
+        "gothic": ["Killstar", "Punk Rave", "The Black Angel"],
+        "alt": ["Dolls Kill", "Unif", "Disturbia"],
+        "emo": ["Hot Topic", "Atticus", "Drop Dead"],
+        "classic": ["Ralph Lauren", "J.Crew", "Brooks Brothers"],
+        "preppy": ["Tommy Hilfiger", "GANT", "Lacoste"],
+        "minimalist": ["COS", "Everlane", "Arket"],
+        "streetwear": ["Supreme", "Stüssy", "Palace"],
+        "biker": ["Schott NYC", "AllSaints", "Harley-Davidson"],
+        "softcore": ["Aritzia", "Frank & Oak", "Sézane"],
+        "cozy": ["Uniqlo", "Lululemon", "Skims"],
+        "y2k": ["IMVU", "Dolls Kill", "Jaded London"],
+        "fairycore": ["Selkie", "For Love & Lemons", "Free People"],
+        "boho": ["Anthropologie", "Spell", "Free People"],
+        "eclectic": ["Lisa Says Gah", "Gorman", "Desigual"],
+        "scandi": ["Arket", "Weekday", "COS"],
+        "clean girl": ["Skims", "Aritzia", "Zara"],
+        "avant-garde": ["Comme des Garçons", "Maison Margiela", "Rick Owens"],
+        "glam": ["House of CB", "Revolve", "PrettyLittleThing"],
+        "maximalist": ["Desigual", "Moschino", "The Attico"],
+        "90s-core": ["Tommy Jeans", "Fila", "Champion"],
+        "military": ["Alpha Industries", "Rothco", "Stone Island"],
+        "dark academia": ["Ralph Lauren", "Massimo Dutti", "Zara"],
+        "artcore": ["Issey Miyake", "Acne Studios", "Marni"],
+        "experimental": ["Maison Margiela", "Craig Green", "Rick Owens"],
+        "conceptual": ["Comme des Garçons", "Yohji Yamamoto", "Iris van Herpen"]
+    }
     genre_to_tags = {
         "comedy": ["quirky", "heartwarming", "awkward"],
         "horror": ["dark", "intense", "surreal"],
@@ -241,8 +279,15 @@ with tabs[1]:
             if styles:
                 st.success("🎨 Your fashion archetypes:")
                 for style in styles:
-                    st.markdown(f"- **{style.title()}**")
-                st.info("🛍️ Brand and outfit suggestions coming soon!")
+                    st.markdown(f"### 👗 {style.title()}")
+                    
+                    # Outfit image from Unsplash
+                    st.image(f"https://source.unsplash.com/400x500/?{style},fashion", caption=f"{style.title()} Look", use_column_width=True)
+                    
+                    # Suggested brands
+                    brands = style_to_brands.get(style.lower(), ["Coming soon..."])
+                    st.markdown(f"**Suggested Brands:** {', '.join(brands)}")
+                    st.markdown("---")
             else:
                 st.warning("No styles found for that input.")
         else:
