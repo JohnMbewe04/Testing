@@ -39,17 +39,22 @@ def get_tags_from_qloo_genre(genre):
     }
     try:
         response = requests.get(url, headers=headers, params=params)
+        st.write("Qloo API Status:", response.status_code)
         if response.status_code == 200:
-            insights = response.json().get("insights", [])
+            data = response.json()
+            st.write("Raw Qloo Response:", data)  # 👈 Add this line
+            insights = data.get("insights", [])
             tag_counts = {}
             for item in insights:
                 for tag in item.get("tags", []):
                     tag_counts[tag] = tag_counts.get(tag, 0) + 1
             sorted_tags = sorted(tag_counts, key=tag_counts.get, reverse=True)
-            return sorted_tags[:5]  # top 5 tags
+            return sorted_tags[:5]
         else:
+            st.error(f"Qloo API error: {response.status_code}")
             return []
-    except:
+    except Exception as e:
+        st.error(f"Error calling Qloo: {e}")
         return []
 
 # Detect user's country from IP
