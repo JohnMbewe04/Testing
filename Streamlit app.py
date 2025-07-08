@@ -2,30 +2,7 @@ import streamlit as st
 import requests
 
 genre_options = ["comedy", "horror", "romance", "action", "animation", "crime", "sci-fi", "drama"]
-
-QLOO_API_KEY = st.secrets["api"]["qloo_key"]
-TMDB_API_KEY = st.secrets["api"]["tmdb_key"]
-
-# Map Qloo tags to fashion archetypes
-def get_fashion_archetypes(input_type, value):
-    tag_to_style = {
-        "quirky": ["indie", "retro", "normcore"],
-        "romantic": ["cottagecore", "vintage", "soft girl"],
-        "gritty": ["grunge", "punk", "utilitarian"],
-        "futuristic": ["techwear", "cyberpunk"],
-        "dark": ["gothic", "alt", "emo"],
-        "elegant": ["classic", "preppy", "minimalist"],
-        "rebellious": ["punk", "streetwear", "biker"],
-        "heartwarming": ["softcore", "cozy", "vintage"],
-        "edgy": ["streetwear", "alt", "y2k"],
-        "whimsical": ["fairycore", "boho", "eclectic"],
-        "minimalist": ["scandi", "normcore", "clean girl"],
-        "dramatic": ["avant-garde", "glam", "maximalist"],
-        "nostalgic": ["retro", "vintage", "90s-core"],
-        "intense": ["military", "dark academia", "utilitarian"],
-        "surreal": ["artcore", "experimental", "conceptual"]
-    }
-    style_to_brands = {
+style_to_brands = {
         "indie": ["Urban Outfitters", "Monki", "Lazy Oaf"],
         "retro": ["Beyond Retro", "Levi's", "Dickies"],
         "normcore": ["Uniqlo", "Everlane", "Muji"],
@@ -62,6 +39,29 @@ def get_fashion_archetypes(input_type, value):
         "artcore": ["Issey Miyake", "Acne Studios", "Marni"],
         "experimental": ["Maison Margiela", "Craig Green", "Rick Owens"],
         "conceptual": ["Comme des Garçons", "Yohji Yamamoto", "Iris van Herpen"]
+    }
+
+QLOO_API_KEY = st.secrets["api"]["qloo_key"]
+TMDB_API_KEY = st.secrets["api"]["tmdb_key"]
+
+# Map Qloo tags to fashion archetypes
+def get_fashion_archetypes(input_type, value):
+    tag_to_style = {
+        "quirky": ["indie", "retro", "normcore"],
+        "romantic": ["cottagecore", "vintage", "soft girl"],
+        "gritty": ["grunge", "punk", "utilitarian"],
+        "futuristic": ["techwear", "cyberpunk"],
+        "dark": ["gothic", "alt", "emo"],
+        "elegant": ["classic", "preppy", "minimalist"],
+        "rebellious": ["punk", "streetwear", "biker"],
+        "heartwarming": ["softcore", "cozy", "vintage"],
+        "edgy": ["streetwear", "alt", "y2k"],
+        "whimsical": ["fairycore", "boho", "eclectic"],
+        "minimalist": ["scandi", "normcore", "clean girl"],
+        "dramatic": ["avant-garde", "glam", "maximalist"],
+        "nostalgic": ["retro", "vintage", "90s-core"],
+        "intense": ["military", "dark academia", "utilitarian"],
+        "surreal": ["artcore", "experimental", "conceptual"]
     }
     genre_to_tags = {
         "comedy": ["quirky", "heartwarming", "awkward"],
