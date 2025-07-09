@@ -161,7 +161,7 @@ with tabs[0]:
             params = {
                 "query": movie_input.strip(),          # ← use "query", not "q"
                 "filter.type": "urn:entity:movie",
-                "limit": 5
+                "limit": 1
             }
 
             with st.spinner("🔍 Searching Qloo for your movie..."):
