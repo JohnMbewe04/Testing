@@ -293,14 +293,14 @@ with tabs[1]:
                     # 🔍 Use Unsplash API to fetch the image
                     unsplash_key = st.secrets["api"]["unsplash_key"]
                     headers = {"Authorization": f"Client-ID {unsplash_key}"}
-                    params = {"query": f"{style} fashion", "per_page": 1}
+                    params = {"query": f"{style} outfit street style", "per_page": 1}
                     unsplash_response = requests.get("https://api.unsplash.com/search/photos", headers=headers, params=params)
 
                     image_url = None
                     if unsplash_response.status_code == 200:
                         results = unsplash_response.json().get("results", [])
                         if results:
-                            image_url = results[0]["urls"]["regular"]
+                            image_url = results[0]["urls"]["small"]
 
                     if image_url:
                         st.image(image_url, caption=f"{style.title()} Look", use_container_width=True)
