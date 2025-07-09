@@ -162,7 +162,7 @@ with tabs[0]:
             qloo_search_url = "https://hackathon.api.qloo.com/search"
             headers = {"X-Api-Key": QLOO_API_KEY}
             qloo_search_params = {
-                "query": movie_input,
+                "q": movie_input,
                 "filter.type": "urn:entity:movie",
                 "limit": 1
             }
