@@ -237,7 +237,6 @@ with tabs[0]:
         # 3) Genre-based branch stays as-is…
         elif selected_genre:
             # your existing Qloo-insights → TMDb fallback logic
-            …
 
         else:
             st.warning("Please enter a movie title or select a genre.")
