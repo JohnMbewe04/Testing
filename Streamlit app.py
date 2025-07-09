@@ -151,94 +151,151 @@ with tabs[0]:
     selected_genre = st.selectbox("Or select a genre:", [""] + genre_options)
 
     if st.button("Get Recommendations"):
+        used_qloo    = False
         country_code = get_user_country()
 
-        # flag to know if we showed Qloo recs
-        used_qloo = False
-
-        # 1) Qloo-first path
+        # --- Qloo-first: movie by title ---
         if movie_input:
             search_url = "https://hackathon.api.qloo.com/search"
             headers    = {"X-Api-Key": QLOO_API_KEY}
             params     = {
-                "query": movie_input.strip(),         # Qloo /search expects "query"
+                "query": movie_input.strip(),
                 "filter.type": "urn:entity:movie",
-                "limit": 1
+                "limit": 5
             }
 
             with st.spinner("🔍 Searching Qloo for your movie..."):
-                search_resp = requests.get(search_url, headers=headers, params=params)
+                resp = requests.get(search_url, headers=headers, params=params)
 
-            # Debugging — uncomment to see raw Qloo response
-            # st.write("Qloo status:", search_resp.status_code)
-            # st.json(search_resp.json())
+            qloo_results = resp.json().get("results", [])
+            if qloo_results:
+                # Use top 5 Qloo matches as “recommendations”
+                used_qloo = True
+                st.success(f"🎥 Qloo Recommendations for “{movie_input.strip()}”:")
+                for item in qloo_results[:10]:
+                    name  = item["name"]
+                    props = item.get("properties", {}).get("external", {})
 
-            qloo_results = search_resp.json().get("results", [])
-            if not qloo_results:
-                st.warning("Qloo couldn’t find the movie. Falling back to TMDb.")
-            else:
-                ent       = qloo_results[0]
-                entity_id = ent["entity_id"]
-                name      = ent["name"]
+                    # 1) Try TMDb ID from Qloo’s external metadata
+                    tmdb_id = props.get("tmdb", {}).get("id")
 
-                rec_url = "https://hackathon.api.qloo.com/recommendations"
-                rec_params = {"type": "urn:entity:movie", "entity_ids": entity_id}
+                    # 2) If not provided, fallback to TMDb search by name
+                    if not tmdb_id:
+                        search = requests.get(
+                            "https://api.themoviedb.org/3/search/movie",
+                            params={"api_key": TMDB_API_KEY, "query": name}
+                        ).json().get("results", [])
+                        tmdb_id = search[0]["id"] if search else None
 
-                with st.spinner(f"🎬 Getting recs for '{name}'..."):
-                    rec_resp = requests.get(rec_url, headers=headers, params=rec_params)
+                    # 3) Fetch details from TMDb
+                    if tmdb_id:
+                        detail = requests.get(
+                            f"https://api.themoviedb.org/3/movie/{tmdb_id}",
+                            params={"api_key": TMDB_API_KEY, "language": "en-US"}
+                        ).json()
+                        poster   = detail.get("poster_path")
+                        overview = detail.get("overview", "")
 
-                recs = rec_resp.json().get("results", [])
-                if recs:
-                    used_qloo = True
-                    st.success(f"🎥 Qloo Recommendations for '{name}':")
-                    for r in recs[:10]:
-                        nm   = r["name"]
-                        imdb = r.get("properties", {}).get("external", {}).get("imdb", {})
-                        rt   = imdb.get("user_rating", "N/A")
-                        vt   = imdb.get("user_rating_count", "N/A")
-                        st.markdown(f"**🎬 {nm}** — {rt} ⭐ ({vt} votes)")
-                        st.markdown("---")
-                else:
-                    st.warning("Qloo found the movie but returned no recommendations. Falling back to TMDb.")
-
-        # 2) Fallback to TMDb if no Qloo recommendations shown
-        if movie_input and not used_qloo:
-            st.info("🔄 Fetching from TMDb as fallback…")
-            search_url = "https://api.themoviedb.org/3/search/movie"
-            params     = {"api_key": TMDB_API_KEY, "query": movie_input, "include_adult": False}
-            tmdb_search = requests.get(search_url, params=params).json().get("results", [])
-
-            if not tmdb_search:
-                st.error("❌ TMDb could not find that movie either.")
-            else:
-                tmdb_id    = tmdb_search[0]["id"]
-                tmdb_title = tmdb_search[0]["title"]
-                st.success(f"🎬 TMDb Recommendations based on '{tmdb_title}':")
-
-                rec_url     = f"https://api.themoviedb.org/3/movie/{tmdb_id}/recommendations"
-                rec_params  = {"api_key": TMDB_API_KEY, "language": "en-US", "page": 1}
-                tmdb_recs   = requests.get(rec_url, params=rec_params).json().get("results", [])
-
-                if not tmdb_recs:
-                    st.warning("No TMDb recs found.")
-                else:
-                    for rec in tmdb_recs[:10]:
-                        title       = rec["title"]
-                        overview    = rec.get("overview", "")
-                        rating      = rec.get("vote_average", "N/A")
-                        votes       = rec.get("vote_count", "N/A")
-                        poster_path = rec.get("poster_path")
-                        if poster_path:
-                            st.image(f"https://image.tmdb.org/t/p/w200{poster_path}", width=120)
-                        st.markdown(f"**🎬 {title}** — {rating} ⭐ ({votes} votes)")
+                        if poster:
+                            st.image(f"https://image.tmdb.org/t/p/w300{poster}", width=120)
+                        st.markdown(f"**🎬 {detail.get('title', name)}**")
                         st.markdown(f"📝 {overview}")
                         st.markdown("---")
+                    else:
+                        st.markdown(f"**🎬 {name}** — details unavailable")
+                        st.markdown("---")
+            else:
+                st.warning("Qloo couldn’t find that movie. Falling back to TMDb.")
 
-        # 3) Genre-based branch stays as-is…
-        #elif selected_genre:
-            # your existing Qloo-insights → TMDb fallback logic
+        # --- Qloo-first: genre-based insights ---
+        elif selected_genre:
+            insights_url = "https://hackathon.api.qloo.com/v2/insights/"
+            headers      = {"X-Api-Key": QLOO_API_KEY}
+            params       = {
+                "filter.type": "urn:entity:movie",
+                "filter.tags": f"urn:tag:genre:media:{selected_genre}"
+            }
 
-        else:
+            with st.spinner("🎞️ Fetching genre-based insights from Qloo..."):
+                resp = requests.get(insights_url, headers=headers, params=params)
+
+            insights = resp.json().get("insights", [])
+            if insights:
+                used_qloo = True
+                st.success(f"🎬 Qloo Insights for {selected_genre.title()} Movies:")
+                for item in insights[:10]:
+                    name  = item["name"]
+                    props = item.get("properties", {}).get("external", {})
+
+                    tmdb_id = props.get("tmdb", {}).get("id")
+                    if not tmdb_id:
+                        search = requests.get(
+                            "https://api.themoviedb.org/3/search/movie",
+                            params={"api_key": TMDB_API_KEY, "query": name}
+                        ).json().get("results", [])
+                        tmdb_id = search[0]["id"] if search else None
+
+                    if tmdb_id:
+                        detail = requests.get(
+                            f"https://api.themoviedb.org/3/movie/{tmdb_id}",
+                            params={"api_key": TMDB_API_KEY, "language": "en-US"}
+                        ).json()
+                        poster   = detail.get("poster_path")
+                        overview = detail.get("overview", "")
+
+                        if poster:
+                            st.image(f"https://image.tmdb.org/t/p/w300{poster}", width=120)
+                        st.markdown(f"**🎬 {detail.get('title', name)}**")
+                        st.markdown(f"📝 {overview}")
+                        st.markdown("---")
+                    else:
+                        st.markdown(f"**🎬 {name}** — details unavailable")
+                        st.markdown("---")
+            else:
+                st.warning("Qloo returned no genre insights. Falling back to TMDb.")
+
+        # --- TMDb fallback if Qloo didn’t yield anything ---
+        if (movie_input or selected_genre) and not used_qloo:
+            st.info("🔄 Fetching from TMDb as fallback…")
+
+            if movie_input:
+                query = movie_input
+                search_url = "https://api.themoviedb.org/3/search/movie"
+                params     = {"api_key": TMDB_API_KEY, "query": query, "include_adult": False}
+            else:
+                # genre fallback
+                genre_map = {
+                    "action": 28, "animation": 16, "comedy": 35, "crime": 80,
+                    "drama": 18,  "horror": 27,     "romance": 10749, "sci-fi": 878
+                }
+                gid = genre_map[selected_genre.lower()]
+                st.success(f"🎬 Popular {selected_genre.title()} Movies (TMDb):")
+                search_url = "https://api.themoviedb.org/3/discover/movie"
+                params     = {
+                    "api_key": TMDB_API_KEY,
+                    "with_genres": gid,
+                    "sort_by": "popularity.desc",
+                    "language": "en-US",
+                    "page": 1
+                }
+
+            tmdb_recs = requests.get(search_url, params=params).json().get("results", [])
+            if not tmdb_recs:
+                st.error("❌ No TMDb results found.")
+            else:
+                for rec in tmdb_recs[:10]:
+                    title       = rec["title"]
+                    overview    = rec.get("overview", "")
+                    rating      = rec.get("vote_average", "N/A")
+                    votes       = rec.get("vote_count", "N/A")
+                    poster_path = rec.get("poster_path")
+
+                    if poster_path:
+                        st.image(f"https://image.tmdb.org/t/p/w200{poster_path}", width=120)
+                    st.markdown(f"**🎬 {title}** — {rating} ⭐ ({votes} votes)")
+                    st.markdown(f"📝 {overview}")
+                    st.markdown("---")
+        elif not movie_input and not selected_genre:
             st.warning("Please enter a movie title or select a genre.")
 
 # === Tab 2: Fashion & Brands ===
