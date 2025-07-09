@@ -3,6 +3,22 @@ import requests
 
 genre_options = ["comedy", "horror", "romance", "action", "animation", "crime", "sci-fi", "drama"]
 
+style_search_terms = {
+    "retro": "retro outfit streetwear",
+    "cozy": "cozy outfit knitwear",
+    "soft girl": "soft girl aesthetic outfit",
+    "grunge": "grunge outfit street style",
+    "punk": "punk fashion editorial",
+    "minimalist": "minimalist outfit neutral tones",
+    "fairycore": "fairycore dress aesthetic",
+    "techwear": "techwear outfit urban",
+    "vintage": "vintage outfit 90s",
+    "streetwear": "streetwear fashion urban",
+    "gothic": "gothic outfit dark fashion",
+    "cottagecore": "cottagecore dress aesthetic"
+    # Add more as needed
+}
+
 style_to_brands = {
         "indie": ["Urban Outfitters", "Monki", "Lazy Oaf"],
         "retro": ["Beyond Retro", "Levi's", "Dickies"],
@@ -287,30 +303,37 @@ with tabs[1]:
             styles = get_fashion_archetypes(input_key, selected)
             if styles:
                 st.success("🎨 Your fashion archetypes:")
-                for style in styles:
-                    st.markdown(f"### 👗 {style.title()}")
-
-                    # 🔍 Use Unsplash API to fetch the image
-                    unsplash_key = st.secrets["api"]["unsplash_key"]
-                    headers = {"Authorization": f"Client-ID {unsplash_key}"}
-                    params = {"query": f"{style} outfit street style", "per_page": 1}
-                    unsplash_response = requests.get("https://api.unsplash.com/search/photos", headers=headers, params=params)
-
-                    image_url = None
-                    if unsplash_response.status_code == 200:
-                        results = unsplash_response.json().get("results", [])
-                        if results:
-                            image_url = results[0]["urls"]["small"]
-
-                    if image_url:
-                        st.image(image_url, caption=f"{style.title()} Look", use_container_width=True)
-                    else:
-                        st.warning("⚠️ No image found for this style.")
-
-                    # ✅ Suggested brands
-                    brands = style_to_brands.get(style.lower(), ["Coming soon..."])
-                    st.markdown(f"**Suggested Brands:** {', '.join(brands)}")
-                    st.markdown("---")
+                
+                cols = st.columns(2)  # 2-column layout
+                
+                for i, style in enumerate(styles):
+                    with cols[i % 2]:
+                        st.markdown(f"### 👗 {style.title()}")
+                
+                        # Build search query
+                        search_query = style_search_terms.get(style.lower(), f"{style} outfit street style")
+                        headers = {"Authorization": f"Client-ID {st.secrets['api']['unsplash_key']}"}
+                        params = {"query": search_query, "per_page": 1}
+                        response = requests.get("https://api.unsplash.com/search/photos", headers=headers, params=params)
+                
+                        image_url = None
+                        if response.status_code == 200:
+                            results = response.json().get("results", [])
+                            if results:
+                                image_url = results[0]["urls"]["small"]
+                                full_image_url = results[0]["urls"]["regular"]
+                        
+                        if image_url:
+                            st.image(image_url, caption=f"{style.title()} Look", use_container_width=True)
+                            with st.expander("🔍 View More"):
+                                st.image(full_image_url, caption="Full Size", use_container_width=True)
+                        else:
+                            st.warning("⚠️ No image found for this style.")
+                
+                        # Suggested brands
+                        brands = style_to_brands.get(style.lower(), ["Coming soon..."])
+                        st.markdown(f"**Suggested Brands:** {', '.join(brands)}")
+                        st.markdown("---")
             else:
                 st.warning("No styles found for that input.")
         else:
