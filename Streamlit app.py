@@ -257,7 +257,7 @@ with tabs[1]:
 
     if st.button("Find My StyleTwin"):
         if selected:
-            styles = get_fashion_archetypes(input_key, selected)
+            styles = get_qloo_styles(input_key, selected)
             if styles:
                 st.success("🎨 Your fashion archetypes:")
                 
@@ -271,8 +271,13 @@ with tabs[1]:
                         style_tags = []
                         for tag in tags:
                             tag_name = tag.get("name", "").lower()
-                            if any(k in tag_name for k in ["core", "wear", "punk", "goth", "vintage"]):
+                            style_keywords = ["core", "wear", "punk", "goth", "vintage", "grunge", "aesthetic", "boho", "minimal"]
+                            if any(k in tag_name for k in style_keywords):
                                 style_tags.append(tag_name)
+                            if style_tags:
+                                st.markdown(f"**Style Tags:** {', '.join(style_tags)}")
+                            else:
+                                st.markdown("**Style Tags:** Not detected")
                 
                         # 🖼 Use first style tag for image search
                         first_style = style_tags[0] if style_tags else brand_name.lower()
@@ -296,7 +301,7 @@ with tabs[1]:
                         else:
                             st.warning("⚠️ No image found for this style.")
                 
-                        st.markdown(f"**Style Tags:** {', '.join(style_terms)}")
+                        st.markdown(f"**Style Tags:** {', '.join(style_tags)}")
                         st.markdown("---")
             else:
                 st.warning("No styles found for that input.")
