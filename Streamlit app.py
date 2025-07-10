@@ -193,10 +193,30 @@ with tabs[0]:
                     st.success(f"🎥 Qloo Recommendations for '{name}':")
                     for r in recs[:10]:
                         nm   = r["name"]
-                        imdb = r.get("properties", {}).get("external", {}).get("imdb", {})
-                        rt   = imdb.get("user_rating", "N/A")
-                        vt   = imdb.get("user_rating_count", "N/A")
-                        st.markdown(f"**🎬 {nm}** — {rt} ⭐ ({vt} votes)")
+                        props = r.get("properties", {}).get("external", {})
+                        rt   = props.get("imdb", {}).get("user_rating", "N/A")
+                        vt   = props.get("imdb", {}).get("user_rating_count", "N/A")
+                        tmdb_id = props.get("tmdb", {}).get("id")
+                    
+                        # Fetch poster & overview from TMDb using external ID
+                        if tmdb_id:
+                            detail = requests.get(
+                                f"https://api.themoviedb.org/3/movie/{tmdb_id}",
+                                params={"api_key": TMDB_API_KEY, "language": "en-US"}
+                            ).json()
+                            poster   = detail.get("poster_path")
+                            overview = detail.get("overview", "")
+                            title    = detail.get("title", nm)
+                        else:
+                            poster = None
+                            overview = ""
+                            title = nm
+                    
+                        if poster:
+                            st.image(f"https://image.tmdb.org/t/p/w200{poster}", width=120)
+                        st.markdown(f"**🎬 {title}** — {rt} ⭐ ({vt} votes)")
+                        if overview:
+                            st.markdown(f"📝 {overview}")
                         st.markdown("---")
                 else:
                     st.warning("Qloo found the movie but returned no recommendations. Falling back to TMDb.")
