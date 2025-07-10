@@ -1,6 +1,10 @@
 import streamlit as st
 import requests
 
+QLOO_API_KEY = st.secrets["api"]["qloo_key"]
+TMDB_API_KEY = st.secrets["api"]["tmdb_key"]
+UNSPLASH_ACCESS_KEY = st.secrets["api"]["unsplash_key"]
+
 genre_options = ["comedy", "horror", "romance", "action", "animation", "crime", "sci-fi", "drama"]
 
 style_search_terms = {
@@ -19,97 +23,36 @@ style_search_terms = {
     # Add more as needed
 }
 
-style_to_brands = {
-        "indie": ["Urban Outfitters", "Monki", "Lazy Oaf"],
-        "retro": ["Beyond Retro", "Levi's", "Dickies"],
-        "normcore": ["Uniqlo", "Everlane", "Muji"],
-        "cottagecore": ["Doen", "Christy Dawn", "Reformation"],
-        "vintage": ["Depop", "Thrifted", "Rokit"],
-        "soft girl": ["Brandy Melville", "YesStyle", "Princess Polly"],
-        "grunge": ["Killstar", "Disturbia", "Hot Topic"],
-        "punk": ["Tripp NYC", "Punk Rave", "AllSaints"],
-        "utilitarian": ["Carhartt", "Acronym", "Nike ACG"],
-        "techwear": ["Acronym", "Nike ISPA", "Guerrilla Group"],
-        "cyberpunk": ["Demobaza", "Y-3", "Rick Owens"],
-        "gothic": ["Killstar", "Punk Rave", "The Black Angel"],
-        "alt": ["Dolls Kill", "Unif", "Disturbia"],
-        "emo": ["Hot Topic", "Atticus", "Drop Dead"],
-        "classic": ["Ralph Lauren", "J.Crew", "Brooks Brothers"],
-        "preppy": ["Tommy Hilfiger", "GANT", "Lacoste"],
-        "minimalist": ["COS", "Everlane", "Arket"],
-        "streetwear": ["Supreme", "Stüssy", "Palace"],
-        "biker": ["Schott NYC", "AllSaints", "Harley-Davidson"],
-        "softcore": ["Aritzia", "Frank & Oak", "Sézane"],
-        "cozy": ["Uniqlo", "Lululemon", "Skims"],
-        "y2k": ["IMVU", "Dolls Kill", "Jaded London"],
-        "fairycore": ["Selkie", "For Love & Lemons", "Free People"],
-        "boho": ["Anthropologie", "Spell", "Free People"],
-        "eclectic": ["Lisa Says Gah", "Gorman", "Desigual"],
-        "scandi": ["Arket", "Weekday", "COS"],
-        "clean girl": ["Skims", "Aritzia", "Zara"],
-        "avant-garde": ["Comme des Garçons", "Maison Margiela", "Rick Owens"],
-        "glam": ["House of CB", "Revolve", "PrettyLittleThing"],
-        "maximalist": ["Desigual", "Moschino", "The Attico"],
-        "90s-core": ["Tommy Jeans", "Fila", "Champion"],
-        "military": ["Alpha Industries", "Rothco", "Stone Island"],
-        "dark academia": ["Ralph Lauren", "Massimo Dutti", "Zara"],
-        "artcore": ["Issey Miyake", "Acne Studios", "Marni"],
-        "experimental": ["Maison Margiela", "Craig Green", "Rick Owens"],
-        "conceptual": ["Comme des Garçons", "Yohji Yamamoto", "Iris van Herpen"]
+styles = get_qloo_styles(input_key, selected)
+if styles:
+    for brand in styles:
+        name = brand["name"]
+        tags = brand.get("tags", [])  # contains things like "techwear", "boho", etc.
+        
+def get_qloo_styles(input_type, value):
+    headers = {
+        "X-Api-Key": QLOO_API_KEY,
+        "Content-Type": "application/json"
     }
 
-QLOO_API_KEY = st.secrets["api"]["qloo_key"]
-TMDB_API_KEY = st.secrets["api"]["tmdb_key"]
-UNSPLASH_ACCESS_KEY = st.secrets["api"]["unsplash_key"]
-
-# Map Qloo tags to fashion archetypes
-def get_fashion_archetypes(input_type, value):
-    tag_to_style = {
-        "quirky": ["indie", "retro", "normcore"],
-        "romantic": ["cottagecore", "vintage", "soft girl"],
-        "gritty": ["grunge", "punk", "utilitarian"],
-        "futuristic": ["techwear", "cyberpunk"],
-        "dark": ["gothic", "alt", "emo"],
-        "elegant": ["classic", "preppy", "minimalist"],
-        "rebellious": ["punk", "streetwear", "biker"],
-        "heartwarming": ["softcore", "cozy", "vintage"],
-        "edgy": ["streetwear", "alt", "y2k"],
-        "whimsical": ["fairycore", "boho", "eclectic"],
-        "minimalist": ["scandi", "normcore", "clean girl"],
-        "dramatic": ["avant-garde", "glam", "maximalist"],
-        "nostalgic": ["retro", "vintage", "90s-core"],
-        "intense": ["military", "dark academia", "utilitarian"],
-        "surreal": ["artcore", "experimental", "conceptual"]
-    }
-    genre_to_tags = {
-        "comedy": ["quirky", "heartwarming", "awkward"],
-        "horror": ["dark", "intense", "surreal"],
-        "romance": ["romantic", "elegant", "whimsical"],
-        "sci-fi": ["futuristic", "surreal", "dramatic"],
-        "drama": ["emotional", "elegant", "nostalgic"],
-        "action": ["gritty", "rebellious", "intense"],
-        "animation": ["whimsical", "quirky", "nostalgic"],
-        "crime": ["gritty", "dark", "minimalist"]
-    }
-    
-    mbti_to_tags = {
-        "infp": ["whimsical", "romantic", "nostalgic"],
-        "intj": ["minimalist", "dark", "futuristic"],
-        "enfp": ["quirky", "dramatic", "eclectic"],
-        "istp": ["gritty", "rebellious", "utilitarian"]
-    }
-    
-    tags = []
     if input_type == "genre":
-        tags = genre_to_tags.get(value.lower(), [])
-    elif input_type == "mbti":
-        tags = mbti_to_tags.get(value.lower(), [])
-    
-    styles = set()
-    for tag in tags:
-        styles.update(tag_to_style.get(tag, []))
-    
-    return list(styles)
+        input_data = {"type": "urn:tag:genre:media", "name": value.lower()}
+    else:
+        input_data = {"type": "urn:tag:mbti", "name": value.lower()}
+
+    body = {
+        "type": "urn:entity:brand",
+        "inputs": [input_data]
+    }
+
+    response = requests.post(
+        "https://hackathon.api.qloo.com/v2/recommendations",
+        headers=headers,
+        json=body
+    )
+
+    results = response.json().get("recommendations", [])
+    return results  # returns full brand entities
 
 # Detect user's country from IP
 def get_user_country():
@@ -318,35 +261,42 @@ with tabs[1]:
             if styles:
                 st.success("🎨 Your fashion archetypes:")
                 
-                cols = st.columns(2)  # 2-column layout
-                
-                for i, style in enumerate(styles):
+                cols = st.columns(2)
+                for i, brand in enumerate(styles):
                     with cols[i % 2]:
-                        st.markdown(f"### 👗 {style.title()}")
+                        brand_name = brand["name"]
+                        tags = brand.get("tags", [])
                 
-                        # Build search query
-                        search_query = style_search_terms.get(style.lower(), f"{style} outfit street style")
+                        # ✅ Extract relevant fashion archetype tags
+                        style_tags = []
+                        for tag in tags:
+                            tag_name = tag.get("name", "").lower()
+                            if any(k in tag_name for k in ["core", "wear", "punk", "goth", "vintage"]):
+                                style_tags.append(tag_name)
+                
+                        # 🖼 Use first style tag for image search
+                        first_style = style_tags[0] if style_tags else brand_name.lower()
+                        search_query = style_search_terms.get(first_style, f"{first_style} fashion outfit")
                         headers = {"Authorization": f"Client-ID {st.secrets['api']['unsplash_key']}"}
                         params = {"query": search_query, "per_page": 1}
                         response = requests.get("https://api.unsplash.com/search/photos", headers=headers, params=params)
-                
+                        
                         image_url = None
                         if response.status_code == 200:
                             results = response.json().get("results", [])
                             if results:
                                 image_url = results[0]["urls"]["small"]
                                 full_image_url = results[0]["urls"]["regular"]
-                        
+                
+                        st.markdown(f"### 👗 {brand_name}")
                         if image_url:
-                            st.image(image_url, caption=f"{style.title()} Look", use_container_width=True)
+                            st.image(image_url, caption=f"{first_style.title()} Look", use_container_width=True)
                             with st.expander("🔍 View More"):
                                 st.image(full_image_url, caption="Full Size", use_container_width=True)
                         else:
                             st.warning("⚠️ No image found for this style.")
                 
-                        # Suggested brands
-                        brands = style_to_brands.get(style.lower(), ["Coming soon..."])
-                        st.markdown(f"**Suggested Brands:** {', '.join(brands)}")
+                        st.markdown(f"**Style Tags:** {', '.join(style_terms)}")
                         st.markdown("---")
             else:
                 st.warning("No styles found for that input.")
