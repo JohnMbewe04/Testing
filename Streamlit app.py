@@ -119,6 +119,35 @@ def get_user_country():
     except:
         return "US"
 
+def get_tmdb_details(name, tmdb_id=None):
+    """
+    Returns: (title, poster_url, overview)
+    - If tmdb_id is provided, uses it.
+    - If not, performs a TMDb search by name.
+    """
+    if not tmdb_id:
+        search = requests.get(
+            "https://api.themoviedb.org/3/search/movie",
+            params={"api_key": TMDB_API_KEY, "query": name, "include_adult": False}
+        ).json().get("results", [])
+        if search:
+            tmdb_id = search[0]["id"]
+
+    if not tmdb_id:
+        return name, None, ""
+
+    detail = requests.get(
+        f"https://api.themoviedb.org/3/movie/{tmdb_id}",
+        params={"api_key": TMDB_API_KEY, "language": "en-US"}
+    ).json()
+
+    title     = detail.get("title", name)
+    poster    = detail.get("poster_path")
+    overview  = detail.get("overview", "")
+    poster_url = f"https://image.tmdb.org/t/p/w200{poster}" if poster else None
+
+    return title, poster_url, overview
+
 # Get streaming platforms for a movie
 def get_streaming_platforms(movie_id, country_code):
     url = f"https://api.themoviedb.org/3/movie/{movie_id}/watch/providers"
@@ -213,7 +242,14 @@ with tabs[0]:
                             ).json()
                             poster   = detail.get("poster_path")
                             overview = detail.get("overview", "")
-                            title    = detail.get("title", nm)
+                            title, poster_url, overview = get_tmdb_details(nm, tmdb_id)
+                            
+                            if poster_url:
+                                st.image(poster_url, width=120)
+                            st.markdown(f"**🎬 {title}** — {rt} ⭐ ({vt} votes)")
+                            if overview:
+                                st.markdown(f"📝 {overview}")
+                            st.markdown("---")
                         else:
                             poster = None
                             overview = ""
