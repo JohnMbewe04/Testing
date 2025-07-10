@@ -122,28 +122,31 @@ def get_user_country():
 def get_tmdb_details(name, tmdb_id=None):
     """
     Returns: (title, poster_url, overview)
-    - If tmdb_id is provided, uses it.
-    - If not, performs a TMDb search by name.
+    Tries TMDb ID first. Only falls back to name if ID fails.
     """
-    if not tmdb_id:
+    detail = None
+
+    if tmdb_id:
+        detail = requests.get(
+            f"https://api.themoviedb.org/3/movie/{tmdb_id}",
+            params={"api_key": TMDB_API_KEY, "language": "en-US"}
+        ).json()
+        if detail.get("status_code") == 34:  # TMDb "Not Found"
+            detail = None
+
+    if not detail:
         search = requests.get(
             "https://api.themoviedb.org/3/search/movie",
             params={"api_key": TMDB_API_KEY, "query": name, "include_adult": False}
         ).json().get("results", [])
         if search:
-            tmdb_id = search[0]["id"]
+            detail = search[0]
+        else:
+            return name, None, ""
 
-    if not tmdb_id:
-        return name, None, ""
-
-    detail = requests.get(
-        f"https://api.themoviedb.org/3/movie/{tmdb_id}",
-        params={"api_key": TMDB_API_KEY, "language": "en-US"}
-    ).json()
-
-    title     = detail.get("title", name)
-    poster    = detail.get("poster_path")
-    overview  = detail.get("overview", "")
+    title      = detail.get("title", name)
+    poster     = detail.get("poster_path")
+    overview   = detail.get("overview", "")
     poster_url = f"https://image.tmdb.org/t/p/w200{poster}" if poster else None
 
     return title, poster_url, overview
