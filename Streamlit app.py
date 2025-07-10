@@ -198,7 +198,12 @@ with tabs[0]:
                         vt   = props.get("imdb", {}).get("user_rating_count", "N/A")
                         tmdb_id = props.get("tmdb", {}).get("id")
                         if not tmdb_id:
-                            st.info(f"ℹ️ No TMDb ID found for **{nm}** — cannot fetch poster or overview.")
+                            search = requests.get(
+                                "https://api.themoviedb.org/3/search/movie",
+                                params={"api_key": TMDB_API_KEY, "query": nm, "include_adult": False}
+                            ).json().get("results", [])
+                            if search:
+                                tmdb_id = search[0]["id"]
                     
                         # Fetch poster & overview from TMDb using external ID
                         if tmdb_id:
