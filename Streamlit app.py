@@ -197,6 +197,8 @@ with tabs[0]:
                         rt   = props.get("imdb", {}).get("user_rating", "N/A")
                         vt   = props.get("imdb", {}).get("user_rating_count", "N/A")
                         tmdb_id = props.get("tmdb", {}).get("id")
+                        if not tmdb_id:
+                            st.info(f"ℹ️ No TMDb ID found for **{nm}** — cannot fetch poster or overview.")
                     
                         # Fetch poster & overview from TMDb using external ID
                         if tmdb_id:
