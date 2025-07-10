@@ -223,12 +223,16 @@ with tabs[0]:
                 if recs:
                     used_qloo = True
                     st.success(f"🎥 Qloo Recommendations for '{name}':")
+                    shown_ids = set()
+                    
                     for r in recs[:10]:
                         nm   = r["name"]
                         props = r.get("properties", {}).get("external", {})
                         rt   = props.get("imdb", {}).get("user_rating", "N/A")
                         vt   = props.get("imdb", {}).get("user_rating_count", "N/A")
                         tmdb_id = props.get("tmdb", {}).get("id")
+                    
+                        # Try TMDb search if no external ID
                         if not tmdb_id:
                             search = requests.get(
                                 "https://api.themoviedb.org/3/search/movie",
@@ -237,29 +241,16 @@ with tabs[0]:
                             if search:
                                 tmdb_id = search[0]["id"]
                     
-                        # Fetch poster & overview from TMDb using external ID
-                        if tmdb_id:
-                            detail = requests.get(
-                                f"https://api.themoviedb.org/3/movie/{tmdb_id}",
-                                params={"api_key": TMDB_API_KEY, "language": "en-US"}
-                            ).json()
-                            poster   = detail.get("poster_path")
-                            overview = detail.get("overview", "")
-                            title, poster_url, overview = get_tmdb_details(nm, tmdb_id)
-                            
-                            if poster_url:
-                                st.image(poster_url, width=120)
-                            st.markdown(f"**🎬 {title}** — {rt} ⭐ ({vt} votes)")
-                            if overview:
-                                st.markdown(f"📝 {overview}")
-                            st.markdown("---")
-                        else:
-                            poster = None
-                            overview = ""
-                            title = nm
+                        # Skip if we've already shown this tmdb_id
+                        if tmdb_id and tmdb_id in shown_ids:
+                            continue
+                        shown_ids.add(tmdb_id)
                     
-                        if poster:
-                            st.image(f"https://image.tmdb.org/t/p/w200{poster}", width=120)
+                        # Fetch and display details
+                        title, poster_url, overview = get_tmdb_details(nm, tmdb_id)
+                    
+                        if poster_url:
+                            st.image(poster_url, width=120)
                         st.markdown(f"**🎬 {title}** — {rt} ⭐ ({vt} votes)")
                         if overview:
                             st.markdown(f"📝 {overview}")
