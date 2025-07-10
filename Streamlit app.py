@@ -22,12 +22,6 @@ style_search_terms = {
     "cottagecore": "cottagecore dress aesthetic"
     # Add more as needed
 }
-
-styles = get_qloo_styles(input_key, selected)
-if styles:
-    for brand in styles:
-        name = brand["name"]
-        tags = brand.get("tags", [])  # contains things like "techwear", "boho", etc.
         
 def get_qloo_styles(input_type, value):
     headers = {
@@ -260,53 +254,51 @@ with tabs[1]:
             styles = get_qloo_styles(input_key, selected)
             if styles:
                 st.success("🎨 Your fashion archetypes:")
-                
                 cols = st.columns(2)
                 for i, brand in enumerate(styles):
                     with cols[i % 2]:
                         brand_name = brand["name"]
                         tags = brand.get("tags", [])
-                
-                        # ✅ Extract relevant fashion archetype tags
-                        style_tags = []
-                        for tag in tags:
-                            tag_name = tag.get("name", "").lower()
-                            style_keywords = ["core", "wear", "punk", "goth", "vintage", "grunge", "aesthetic", "boho", "minimal"]
-                            if any(k in tag_name for k in style_keywords):
-                                style_tags.append(tag_name)
-                            if style_tags:
-                                st.markdown(f"**Style Tags:** {', '.join(style_tags)}")
-                            else:
-                                st.markdown("**Style Tags:** Not detected")
-                
-                        # 🖼 Use first style tag for image search
-                        first_style = style_tags[0] if style_tags else brand_name.lower()
-                        search_query = style_search_terms.get(first_style, f"{first_style} fashion outfit")
-                        headers = {"Authorization": f"Client-ID {st.secrets['api']['unsplash_key']}"}
-                        params = {"query": search_query, "per_page": 1}
-                        response = requests.get("https://api.unsplash.com/search/photos", headers=headers, params=params)
-                        
-                        image_url = None
-                        if response.status_code == 200:
-                            results = response.json().get("results", [])
-                            if results:
-                                image_url = results[0]["urls"]["small"]
-                                full_image_url = results[0]["urls"]["regular"]
-                
+    
+                        # Filter for fashion-relevant style tags
+                        style_keywords = ["core", "wear", "punk", "goth", "vintage", "grunge", "aesthetic", "boho", "minimal"]
+                        style_tags = [tag["name"].lower() for tag in tags if any(k in tag["name"].lower() for k in style_keywords)]
+    
                         st.markdown(f"### 👗 {brand_name}")
-                        if image_url:
-                            st.image(image_url, caption=f"{first_style.title()} Look", use_container_width=True)
-                            with st.expander("🔍 View More"):
-                                st.image(full_image_url, caption="Full Size", use_container_width=True)
+                        st.info("No specific fashion style tags found, but this brand may still fit your aesthetic.")
+    
+                        if style_tags:
+                            first_style = style_tags[0]
+                            search_query = next(
+                                (v for k, v in style_search_terms.items() if k in first_style),
+                                f"{first_style} fashion outfit"
+                            )
+                            headers = {"Authorization": f"Client-ID {UNSPLASH_ACCESS_KEY}"}
+                            params = {"query": search_query, "per_page": 1}
+                            response = requests.get("https://api.unsplash.com/search/photos", headers=headers, params=params)
+    
+                            image_url = None
+                            if response.status_code == 200:
+                                results = response.json().get("results", [])
+                                if results:
+                                    image_url = results[0]["urls"]["small"]
+                                    full_image_url = results[0]["urls"]["regular"]
+    
+                            if image_url:
+                                st.image(image_url, caption=f"{first_style.title()} Look", use_container_width=True)
+                                with st.expander("🔍 View More"):
+                                    st.image(full_image_url, caption="Full Size", use_container_width=True)
+                            else:
+                                st.warning("⚠️ No image found for this style.")
+                            st.markdown(f"**Style Tags:** {', '.join(style_tags)}")
                         else:
-                            st.warning("⚠️ No image found for this style.")
-                
-                        st.markdown(f"**Style Tags:** {', '.join(style_tags)}")
+                            st.info("No specific fashion style tags found, but this brand may still fit your aesthetic.")
                         st.markdown("---")
             else:
                 st.warning("No styles found for that input.")
         else:
             st.warning("Please enter a valid input.")
+
 
             
 # === Tab 3: AI Fitting Room ===
