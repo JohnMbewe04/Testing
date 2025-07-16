@@ -151,6 +151,53 @@ def get_outfit_images(q, per_page=4):
     )
     return resp.json().get("results", [])
 
+def get_user_country():
+    try:
+        import geocoder
+        g = geocoder.ip("me")
+        return g.country
+    except:
+        return "US"
+
+def get_tmdb_details(name, tmdb_id=None):
+    """
+    Returns: (title, poster_url, overview)
+    Tries TMDb ID first. Only falls back to name if ID fails.
+    """
+    detail = None
+
+    if tmdb_id:
+        detail = requests.get(
+            f"https://api.themoviedb.org/3/movie/{tmdb_id}",
+            params={"api_key": TMDB_API_KEY, "language": "en-US"}
+        ).json()
+        if detail.get("status_code") == 34:  # TMDb "Not Found"
+            detail = None
+
+    if not detail:
+        search = requests.get(
+            "https://api.themoviedb.org/3/search/movie",
+            params={"api_key": TMDB_API_KEY, "query": name, "include_adult": False}
+        ).json().get("results", [])
+        if search:
+            detail = search[0]
+        else:
+            return name, None, ""
+
+    title      = detail.get("title", name)
+    poster     = detail.get("poster_path")
+    overview   = detail.get("overview", "")
+    poster_url = f"https://image.tmdb.org/t/p/w200{poster}" if poster else None
+
+    return title, poster_url, overview
+
+# Get streaming platforms for a movie
+def get_streaming_platforms(movie_id, country_code):
+    url = f"https://api.themoviedb.org/3/movie/{movie_id}/watch/providers"
+    params = {"api_key": TMDB_API_KEY}
+    response = requests.get(url, params=params).json()
+    platforms = response.get("results", {}).get(country_code, {}).get("flatrate", [])
+    return [p["provider_name"] for p in platforms]
 
 # -------------------------------------------------------------------
 #  Session‐State “Tabs” Setup
@@ -204,6 +251,114 @@ if choice == TAB_MEDIA:
         )
         st.session_state.selected_style = None
         st.session_state.active_tab = TAB_FASHION
+
+        country_code = get_user_country()
+    
+        # flag to know if we showed Qloo recs
+        used_qloo = False
+    
+        # 1) Qloo-first path
+        if movie_input:
+            search_url = "https://hackathon.api.qloo.com/search"
+            headers    = {"X-Api-Key": QLOO_API_KEY}
+            params     = {
+                "query": movie_input.strip(),         # Qloo /search expects "query"
+                "filter.type": "urn:entity:movie",
+                "limit": 1
+            }
+    
+            with st.spinner("🔍 Searching Qloo for your movie..."):
+                search_resp = requests.get(search_url, headers=headers, params=params)
+    
+                qloo_results = search_resp.json().get("results", [])
+            if not qloo_results:
+                st.warning("Qloo couldn’t find the movie. Falling back to TMDb.")
+            else:
+                ent       = qloo_results[0]
+                entity_id = ent["entity_id"]
+                name      = ent["name"]
+    
+                rec_url = "https://hackathon.api.qloo.com/recommendations"
+                rec_params = {"type": "urn:entity:movie", "entity_ids": entity_id}
+    
+                with st.spinner(f"🎬 Getting recs for '{name}'..."):
+                    rec_resp = requests.get(rec_url, headers=headers, params=rec_params)
+    
+                recs = rec_resp.json().get("results", [])
+                if recs:
+                    used_qloo = True
+                    st.success(f"🎥 Qloo Recommendations for '{name}':")
+                    shown_ids = set()
+                        
+                    for r in recs[:10]:
+                        nm   = r["name"]
+                        props = r.get("properties", {}).get("external", {})
+                        rt   = props.get("imdb", {}).get("user_rating", "N/A")
+                        vt   = props.get("imdb", {}).get("user_rating_count", "N/A")
+                        tmdb_id = props.get("tmdb", {}).get("id")
+                        
+                        # Try TMDb search if no external ID
+                        if not tmdb_id:
+                            search = requests.get(
+                                "https://api.themoviedb.org/3/search/movie",
+                                params={"api_key": TMDB_API_KEY, "query": nm, "include_adult": False}
+                            ).json().get("results", [])
+                            if search:
+                                tmdb_id = search[0]["id"]
+
+                        # Skip if we've already shown this tmdb_id
+                        if tmdb_id and tmdb_id in shown_ids:
+                            continue
+                        shown_ids.add(tmdb_id)
+                        
+                        # Fetch and display details
+                        title, poster_url, overview = get_tmdb_details(nm, tmdb_id)
+                        
+                        if poster_url:
+                            st.image(poster_url, width=120)
+                        st.markdown(f"**🎬 {title}** — {rt} ⭐ ({vt} votes)")
+                        
+                        if overview:
+                            st.markdown(f"📝 {overview}")
+                        st.markdown("---")
+                else:
+                    st.warning("Qloo found the movie but returned no recommendations. Falling back to TMDb.")
+    
+        # 2) Fallback to TMDb if no Qloo recommendations shown
+        if movie_input and not used_qloo:
+            st.info("🔄 Fetching from TMDb as fallback…")
+            search_url = "https://api.themoviedb.org/3/search/movie"
+            params     = {"api_key": TMDB_API_KEY, "query": movie_input, "include_adult": False}
+            tmdb_search = requests.get(search_url, params=params).json().get("results", [])
+    
+            if not tmdb_search:
+                st.error("❌ TMDb could not find that movie either.")
+            else:
+                tmdb_id    = tmdb_search[0]["id"]
+                tmdb_title = tmdb_search[0]["title"]
+                st.success(f"🎬 TMDb Recommendations based on '{tmdb_title}':")
+    
+                rec_url     = f"https://api.themoviedb.org/3/movie/{tmdb_id}/recommendations"
+                rec_params  = {"api_key": TMDB_API_KEY, "language": "en-US", "page": 1}
+                tmdb_recs   = requests.get(rec_url, params=rec_params).json().get("results", [])
+    
+                if not tmdb_recs:
+                    st.warning("No TMDb recs found.")
+                else:
+                    for rec in tmdb_recs[:10]:
+                        title       = rec["title"]
+                        overview    = rec.get("overview", "")
+                        rating      = rec.get("vote_average", "N/A")
+                        votes       = rec.get("vote_count", "N/A")
+                        poster_path = rec.get("poster_path")
+                        if poster_path:
+                            st.image(f"https://image.tmdb.org/t/p/w200{poster_path}", width=120)
+                        st.markdown(f"**🎬 {title}** — {rating} ⭐ ({votes} votes)")
+                        st.markdown(f"📝 {overview}")
+                        st.markdown("---")
+    
+            else:
+                st.warning("Please enter a movie title or select a genre.")
 
         # try rerunning to pick up the new tab
         try:
