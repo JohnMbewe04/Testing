@@ -29,7 +29,18 @@ style_search_terms = {
     "90s-core": "90s aesthetic outfit",
     "maximalist": "colorful maximalist fashion",
     "classic": "classic elegant fashion",
-    "preppy": "preppy outfit aesthetic"
+    "preppy": "preppy outfit aesthetic",
+    "normcore": "normcore fashion",
+    "alt": "alt fashion",
+    "utilitarian": "utilitarian outfit",
+    "softcore": "cozy aesthetic fashion",
+    "cozy": "cozy aesthetic clothes",
+    "artcore": "artcore fashion",
+    "experimental": "experimental fashion",
+    "conceptual": "conceptual fashion",
+    "biker": "biker fashion",
+    "emo": "emo outfit",
+    "y2k": "y2k fashion"
 }
 
 
@@ -206,11 +217,8 @@ st.caption("Discover your aesthetic twin in media and fashion.")
 
 # Create the main tabs
 tab_labels = ["🎬 Media Style Match", "👗 Fashion & Brands", "🧍‍♂️ AI Fitting Room"]
-if "active_tab" not in st.session_state:
-    st.session_state.active_tab = "media"
-
-if "active_tab" not in st.session_state:
-    st.session_state.active_tab = tab_labels[0]
+if "active_tab" not in st.session_state or st.session_state.active_tab not in tab_labels:
+    st.session_state.active_tab = tab_labels[0]  # default to first tab
 
 selected_tab = st.radio("🧭 Navigate between views:", tab_labels, index=tab_labels.index(st.session_state.active_tab))
 
