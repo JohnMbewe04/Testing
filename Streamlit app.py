@@ -1,5 +1,6 @@
 import streamlit as st
 import requests
+import urllib.parse
 
 QLOO_API_KEY = st.secrets["api"]["qloo_key"]
 TMDB_API_KEY = st.secrets["api"]["tmdb_key"]
@@ -361,17 +362,27 @@ with tabs[1]:
                     if img:
                         thumb = img[0]["urls"]["small"]
                         full = img[0]["urls"]["regular"]
-                        st.image(thumb, use_column_width=True)
-                        with st.expander("View full image"):
-                            st.image(full, use_column_width=True)
+                        st.image(thumb, use_container_width=True)
+                        st.markdown(
+                            f'''
+                            <a href="{full}" target="_blank">
+                                <img src="{thumb}" style="width:100%; border-radius:10px;" />
+                            </a>
+                            ''',
+                            unsafe_allow_html=True
+                        )
+
                     else:
                         st.warning("No image found")
 
-                    # Brands
+                    # Render suggested brands with Google search links
                     brands = style_to_brands.get(style, ["Coming soon…"])
-                    st.markdown("**🛍️ Suggested Brands:** " + ", ".join(f"🔸 {b}" for b in brands))
-                    st.markdown(", ".join(f"[{b}](https://www.google.com/search?q={b}+clothing)" for b in brands))
-
+                    brand_links = ", ".join(
+                        f"[🔸 {b}](https://www.google.com/search?q={urllib.parse.quote_plus(b + ' clothing')})"
+                        for b in brands
+                    )
+                    st.markdown("**🛍️ Suggested Brands:** " + brand_links)
+                    
                     st.markdown("---")
                     st.info(f"Based on your love for *{user_input}*, your style twin might love:")
 
