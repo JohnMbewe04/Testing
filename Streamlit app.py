@@ -362,15 +362,18 @@ with tabs[1]:
                     if img:
                         thumb = img[0]["urls"]["small"]
                         full = img[0]["urls"]["regular"]
-                        st.image(thumb, use_container_width=True)
+                        #st.image(thumb, use_container_width=True)
                         st.markdown(
                             f'''
-                            <a href="{full}" target="_blank">
-                                <img src="{thumb}" style="width:100%; border-radius:10px;" />
+                            <a href="{full}" target="_blank" style="display:inline-block; overflow:hidden; border-radius:12px;">
+                                <img src="{thumb}" style="width:100%; transition: transform .3s; border-radius:12px;" 
+                                     onmouseover="this.style.transform='scale(1.05)'" 
+                                     onmouseout="this.style.transform='scale(1)'" />
                             </a>
                             ''',
                             unsafe_allow_html=True
                         )
+
 
                     else:
                         st.warning("No image found")
