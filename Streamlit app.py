@@ -320,7 +320,6 @@ with tabs[0]:
         else:
             st.warning("Please enter a movie title or select a genre.")
 
-
 # === Tab 2: Fashion & Brands ===
 with tabs[1]:
     st.header("👚 Clothing & Brand Recommendations")
@@ -335,54 +334,47 @@ with tabs[1]:
         user_input = st.text_input("Enter a music genre:")
 
     if st.button("Find My Style"):
-        # 3) get archetypes
-        mc = user_input if media_type=="Movie" else None
-        gc = user_input if media_type=="Genre" else None
-        mu = user_input if media_type=="Music" else None
+        mc = user_input if media_type == "Movie" else None
+        gc = user_input if media_type == "Genre" else None
+        mu = user_input if media_type == "Music" else None
 
         archetypes = get_archetypes_from_media(movie=mc, genre=gc, music=mu)
+
         if not archetypes:
             st.warning("Sorry, we couldn't detect an aesthetic. Try another input.")
         else:
             st.success(f"Found these archetypes: {', '.join(archetypes)}")
+
             cols = st.columns(2)
             for idx, style in enumerate(archetypes):
                 with cols[idx % 2]:
-                    # your code continues...
+                    st.markdown(f"### 👗 {style.title()} Look")
 
+                    # Unsplash image
+                    q = style_search_terms.get(style, f"{style} outfit")
+                    resp = requests.get(
+                        "https://api.unsplash.com/search/photos",
+                        headers={"Authorization": f"Client-ID {UNSPLASH_ACCESS_KEY}"},
+                        params={"query": q, "per_page": 1}
+                    )
+                    img = resp.json().get("results", [])
+                    if img:
+                        thumb = img[0]["urls"]["small"]
+                        full = img[0]["urls"]["regular"]
+                        st.image(thumb, use_column_width=True)
+                        with st.expander("View full image"):
+                            st.image(full, use_column_width=True)
+                    else:
+                        st.warning("No image found")
 
-        st.success(f"Found these archetypes: {', '.join(archetypes)}")
+                    # Brands
+                    brands = style_to_brands.get(style, ["Coming soon…"])
+                    st.markdown("**🛍️ Suggested Brands:** " + ", ".join(f"🔸 {b}" for b in brands))
+                    st.markdown(", ".join(f"[{b}](https://www.google.com/search?q={b}+clothing)" for b in brands))
 
-        cols = st.columns(2)
-        for idx, style in enumerate(archetypes):
-            with cols[idx % 2]:
-                st.markdown(f"### 👗 {style.title()} Look")
-                # Unsplash image
-                q = style_search_terms.get(style, f"{style} outfit")
-                resp = requests.get(
-                    "https://api.unsplash.com/search/photos",
-                    headers={"Authorization":f"Client-ID {UNSPLASH_ACCESS_KEY}"},
-                    params={"query":q,"per_page":1}
-                )
-                img = resp.json().get("results", [])
-                if img:
-                    thumb = img[0]["urls"]["small"]
-                    full  = img[0]["urls"]["regular"]
-                    st.image(thumb, use_column_width=True)
-                    with st.expander("View full image"):
-                        st.image(full, use_column_width=True)
-                else:
-                    st.warning("No image found")
+                    st.markdown("---")
+                    st.info(f"Based on your love for *{user_input}*, your style twin might love:")
 
-                # Brands
-                brands = style_to_brands.get(style, ["Coming soon…"])
-                st.markdown("**🛍️ Suggested Brands:** " + ", ".join(f"🔸 {b}" for b in brands))
-                st.markdown(", ".join(f"[{b}](https://www.google.com/search?q={b}+clothing)" for b in brands))
-
-                st.markdown("---")
-                st.info(f"Based on your love for *{user_input}*, your style twin might love:")
-
-                
             
 # === Tab 3: AI Fitting Room ===
 with tabs[2]:
