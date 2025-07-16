@@ -7,6 +7,31 @@ UNSPLASH_ACCESS_KEY = st.secrets["api"]["unsplash_key"]
 
 genre_options = ["comedy", "horror", "romance", "action", "animation", "crime", "sci-fi", "drama"]
 
+style_search_terms = {
+    "indie": "indie aesthetic outfit",
+    "retro": "retro fashion look",
+    "grunge": "grunge style clothing",
+    "punk": "punk outfit fashion",
+    "minimalist": "minimalist outfit woman",
+    "techwear": "techwear fashion look",
+    "cottagecore": "cottagecore outfit",
+    "fairycore": "fairycore aesthetic clothes",
+    "cyberpunk": "cyberpunk style clothes",
+    "soft girl": "soft girl outfit aesthetic",
+    "streetwear": "streetwear fashion",
+    "clean girl": "clean girl fashion",
+    "gothic": "gothic outfit",
+    "boho": "boho fashion woman",
+    "vintage": "vintage aesthetic look",
+    "dark academia": "dark academia outfit",
+    "avant-garde": "avant-garde fashion",
+    "90s-core": "90s aesthetic outfit",
+    "maximalist": "colorful maximalist fashion",
+    "classic": "classic elegant fashion",
+    "preppy": "preppy outfit aesthetic"
+}
+
+
 # 1) static mapping of media/music genre → Qloo‐style “tags”
 genre_to_tags = {
     "comedy":    ["quirky", "heartwarming", "nostalgic"],
@@ -345,8 +370,12 @@ with tabs[1]:
 
                 # Brands
                 brands = style_to_brands.get(style, ["Coming soon…"])
-                st.markdown("**Suggested Brands:** " + ", ".join(brands))
+                st.markdown("**🛍️ Suggested Brands:** " + ", ".join(f"🔸 {b}" for b in brands))
+                st.markdown(", ".join(f"[{b}](https://www.google.com/search?q={b}+clothing)" for b in brands))
+
                 st.markdown("---")
+                st.info(f"Based on your love for *{user_input}*, your style twin might love:")
+
                 
             
 # === Tab 3: AI Fitting Room ===
