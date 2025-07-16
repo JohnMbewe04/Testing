@@ -209,10 +209,14 @@ tab_labels = ["🎬 Media Style Match", "👗 Fashion & Brands", "🧍‍♂️ 
 if "active_tab" not in st.session_state:
     st.session_state.active_tab = "media"
 
-tabs = st.tabs(tab_labels)
+if "active_tab" not in st.session_state:
+    st.session_state.active_tab = tab_labels[0]
+
+selected_tab = st.radio("🧭 Navigate between views:", tab_labels, index=tab_labels.index(st.session_state.active_tab))
+
 
 # === Tab 1: Media Style Match ===
-with tabs[0]:
+if selected_tab == tab_labels[0]:
     #if st.session_state.active_tab == "media":
         st.header("🎥 Movie & Song Recommendations")
         st.markdown("Input your favorite **movie title** or select a **genre** to get aesthetic recommendations.")
@@ -340,7 +344,7 @@ with tabs[0]:
    #     st.session_state.active_tab = "media"
 
 # === Tab 2: Fashion & Brands ===
-with tabs[1]:
+elif selected_tab == tab_labels[1]:
     #if st.session_state.active_tab == "fashion":
         st.header("👚 Clothing & Brand Recommendations")
         st.markdown("Find clothing brands or outfits that match your media style or personality.")
@@ -410,14 +414,15 @@ with tabs[1]:
                         
                         if st.button(f"🧪 Try '{style.title()}' in Fitting Room", key=f"try_{style}"):
                             st.session_state["selected_style"] = style
-                            st.session_state["active_tab"] = "fitting_room"  # custom flag for switching tabs
+                            st.session_state["active_tab"] = tab_labels[2]  # programmatic switch to Tab 3
                             st.experimental_rerun()
+
 
     #else:
     #    st.session_state.active_tab = "fashion"  # for Tab 2
             
 # === Tab 3: AI Fitting Room ===
-with tabs[2]:
+elif selected_tab == tab_labels[2]:
    # if st.session_state.active_tab == "fitting_room":
         st.header("🧍 Virtual Fitting Simulation")
         selected_style = st.session_state.get("selected_style")
