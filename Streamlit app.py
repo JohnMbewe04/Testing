@@ -343,7 +343,13 @@ with tabs[1]:
         archetypes = get_archetypes_from_media(movie=mc, genre=gc, music=mu)
         if not archetypes:
             st.warning("Sorry, we couldn't detect an aesthetic. Try another input.")
-            return
+        else:
+            st.success(f"Found these archetypes: {', '.join(archetypes)}")
+            cols = st.columns(2)
+            for idx, style in enumerate(archetypes):
+                with cols[idx % 2]:
+                    # your code continues...
+
 
         st.success(f"Found these archetypes: {', '.join(archetypes)}")
 
