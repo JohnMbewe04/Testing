@@ -189,6 +189,16 @@ def check_image(url):
     except:
         return False
 
+@st.cache_data(ttl=600)
+def get_outfit_images(style_query):
+    resp = requests.get(
+        "https://api.unsplash.com/search/photos",
+        headers={"Authorization": f"Client-ID {UNSPLASH_ACCESS_KEY}"},
+        params={"query": style_query, "per_page": 4}
+    )
+    return resp.json().get("results", [])
+
+
 # App Title
 st.set_page_config(page_title="AI StyleTwin", layout="wide")
 st.title("🧠 AI StyleTwin")
@@ -326,7 +336,8 @@ with tabs[0]:
             else:
                 st.warning("Please enter a movie title or select a genre.")
 
-st.session_state.active_tab = "media"
+    else:
+        st.session_state.active_tab = "media"
 
 # === Tab 2: Fashion & Brands ===
 with tabs[1]:
@@ -389,7 +400,7 @@ with tabs[1]:
                         # Render suggested brands with Google search links
                         brands = style_to_brands.get(style, ["Coming soon…"])
                         brand_links = ", ".join(
-                            f"[🔸 {b}](https://www.google.com/search?q={urllib.parse.quote_plus(b + ' clothing')})"
+                            f"[🔸 {b}](https://www.google.com/search?q={urllib.parse.quote_plus(b + ' clothing')}&hl=en)"
                             for b in brands
                         )
                         st.markdown("**🛍️ Suggested Brands:** " + brand_links)
@@ -402,7 +413,8 @@ with tabs[1]:
                             st.session_state["active_tab"] = "fitting_room"  # custom flag for switching tabs
                             st.experimental_rerun()
 
-st.session_state.active_tab = "fashion"  # for Tab 2
+    else:
+        st.session_state.active_tab = "fashion"  # for Tab 2
             
 # === Tab 3: AI Fitting Room ===
 with tabs[2]:
@@ -422,7 +434,7 @@ with tabs[2]:
                 headers={"Authorization": f"Client-ID {UNSPLASH_ACCESS_KEY}"},
                 params={"query": q, "per_page": 4}
             )
-            images = resp.json().get("results", [])
+            images = get_outfit_images(style_search_terms.get(selected_style, f"{selected_style} outfit"))
 
             cols = st.columns(2)
             for idx, img in enumerate(images):
@@ -430,6 +442,6 @@ with tabs[2]:
                     st.image(img["urls"]["small"], use_container_width=True)
                     st.caption(f"{selected_style.title()} Look #{idx+1}")
 
-
-st.session_state.active_tab = "fitting_room"
+    else:
+        st.session_state.active_tab = "fitting_room"
 
