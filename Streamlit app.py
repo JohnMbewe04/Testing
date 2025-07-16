@@ -213,7 +213,7 @@ tabs = st.tabs(tab_labels)
 
 # === Tab 1: Media Style Match ===
 with tabs[0]:
-    if st.session_state.active_tab == "media":
+    #if st.session_state.active_tab == "media":
         st.header("🎥 Movie & Song Recommendations")
         st.markdown("Input your favorite **movie title** or select a **genre** to get aesthetic recommendations.")
     
@@ -336,12 +336,12 @@ with tabs[0]:
             else:
                 st.warning("Please enter a movie title or select a genre.")
 
-    else:
-        st.session_state.active_tab = "media"
+   # else:
+   #     st.session_state.active_tab = "media"
 
 # === Tab 2: Fashion & Brands ===
 with tabs[1]:
-    if st.session_state.active_tab == "fashion":
+    #if st.session_state.active_tab == "fashion":
         st.header("👚 Clothing & Brand Recommendations")
         st.markdown("Find clothing brands or outfits that match your media style or personality.")
     
@@ -413,12 +413,12 @@ with tabs[1]:
                             st.session_state["active_tab"] = "fitting_room"  # custom flag for switching tabs
                             st.experimental_rerun()
 
-    else:
-        st.session_state.active_tab = "fashion"  # for Tab 2
+    #else:
+    #    st.session_state.active_tab = "fashion"  # for Tab 2
             
 # === Tab 3: AI Fitting Room ===
 with tabs[2]:
-    if st.session_state.active_tab == "fitting_room":
+   # if st.session_state.active_tab == "fitting_room":
         st.header("🧍 Virtual Fitting Simulation")
         selected_style = st.session_state.get("selected_style")
 
@@ -442,6 +442,6 @@ with tabs[2]:
                     st.image(img["urls"]["small"], use_container_width=True)
                     st.caption(f"{selected_style.title()} Look #{idx+1}")
 
-    else:
-        st.session_state.active_tab = "fitting_room"
+    #else:
+    #    st.session_state.active_tab = "fitting_room"
 
