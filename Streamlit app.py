@@ -195,211 +195,241 @@ st.title("🧠 AI StyleTwin")
 st.caption("Discover your aesthetic twin in media and fashion.")
 
 # Create the main tabs
-tabs = st.tabs(["🎬 Media Style Match", "👗 Fashion & Brands", "🧍‍♂️ AI Fitting Room"])
+tab_labels = ["🎬 Media Style Match", "👗 Fashion & Brands", "🧍‍♂️ AI Fitting Room"]
+if "active_tab" not in st.session_state:
+    st.session_state.active_tab = "media"
+
+tabs = st.tabs(tab_labels)
 
 # === Tab 1: Media Style Match ===
 with tabs[0]:
-    st.header("🎥 Movie & Song Recommendations")
-    st.markdown("Input your favorite **movie title** or select a **genre** to get aesthetic recommendations.")
-
-    movie_input    = st.text_input("🎬 Enter a movie title:", "")
-    selected_genre = st.selectbox("Or select a genre:", [""] + genre_options)
-
-    if st.button("Get Recommendations"):
-        country_code = get_user_country()
-
-        # flag to know if we showed Qloo recs
-        used_qloo = False
-
-        # 1) Qloo-first path
-        if movie_input:
-            search_url = "https://hackathon.api.qloo.com/search"
-            headers    = {"X-Api-Key": QLOO_API_KEY}
-            params     = {
-                "query": movie_input.strip(),         # Qloo /search expects "query"
-                "filter.type": "urn:entity:movie",
-                "limit": 1
-            }
-
-            with st.spinner("🔍 Searching Qloo for your movie..."):
-                search_resp = requests.get(search_url, headers=headers, params=params)
-
-            # Debugging — uncomment to see raw Qloo response
-            # st.write("Qloo status:", search_resp.status_code)
-            # st.json(search_resp.json())
-
-            qloo_results = search_resp.json().get("results", [])
-            if not qloo_results:
-                st.warning("Qloo couldn’t find the movie. Falling back to TMDb.")
-            else:
-                ent       = qloo_results[0]
-                entity_id = ent["entity_id"]
-                name      = ent["name"]
-
-                rec_url = "https://hackathon.api.qloo.com/recommendations"
-                rec_params = {"type": "urn:entity:movie", "entity_ids": entity_id}
-
-                with st.spinner(f"🎬 Getting recs for '{name}'..."):
-                    rec_resp = requests.get(rec_url, headers=headers, params=rec_params)
-
-                recs = rec_resp.json().get("results", [])
-                if recs:
-                    used_qloo = True
-                    st.success(f"🎥 Qloo Recommendations for '{name}':")
-                    shown_ids = set()
-                    
-                    for r in recs[:10]:
-                        nm   = r["name"]
-                        props = r.get("properties", {}).get("external", {})
-                        rt   = props.get("imdb", {}).get("user_rating", "N/A")
-                        vt   = props.get("imdb", {}).get("user_rating_count", "N/A")
-                        tmdb_id = props.get("tmdb", {}).get("id")
-                    
-                        # Try TMDb search if no external ID
-                        if not tmdb_id:
-                            search = requests.get(
-                                "https://api.themoviedb.org/3/search/movie",
-                                params={"api_key": TMDB_API_KEY, "query": nm, "include_adult": False}
-                            ).json().get("results", [])
-                            if search:
-                                tmdb_id = search[0]["id"]
-                    
-                        # Skip if we've already shown this tmdb_id
-                        if tmdb_id and tmdb_id in shown_ids:
-                            continue
-                        shown_ids.add(tmdb_id)
-                    
-                        # Fetch and display details
-                        title, poster_url, overview = get_tmdb_details(nm, tmdb_id)
-                    
-                        if poster_url:
-                            st.image(poster_url, width=120)
-                        st.markdown(f"**🎬 {title}** — {rt} ⭐ ({vt} votes)")
-                        if overview:
+    if st.session_state.active_tab == "media":
+        st.header("🎥 Movie & Song Recommendations")
+        st.markdown("Input your favorite **movie title** or select a **genre** to get aesthetic recommendations.")
+    
+        movie_input    = st.text_input("🎬 Enter a movie title:", "")
+        selected_genre = st.selectbox("Or select a genre:", [""] + genre_options)
+    
+        if st.button("Get Recommendations"):
+            country_code = get_user_country()
+    
+            # flag to know if we showed Qloo recs
+            used_qloo = False
+    
+            # 1) Qloo-first path
+            if movie_input:
+                search_url = "https://hackathon.api.qloo.com/search"
+                headers    = {"X-Api-Key": QLOO_API_KEY}
+                params     = {
+                    "query": movie_input.strip(),         # Qloo /search expects "query"
+                    "filter.type": "urn:entity:movie",
+                    "limit": 1
+                }
+    
+                with st.spinner("🔍 Searching Qloo for your movie..."):
+                    search_resp = requests.get(search_url, headers=headers, params=params)
+    
+                # Debugging — uncomment to see raw Qloo response
+                # st.write("Qloo status:", search_resp.status_code)
+                # st.json(search_resp.json())
+    
+                qloo_results = search_resp.json().get("results", [])
+                if not qloo_results:
+                    st.warning("Qloo couldn’t find the movie. Falling back to TMDb.")
+                else:
+                    ent       = qloo_results[0]
+                    entity_id = ent["entity_id"]
+                    name      = ent["name"]
+    
+                    rec_url = "https://hackathon.api.qloo.com/recommendations"
+                    rec_params = {"type": "urn:entity:movie", "entity_ids": entity_id}
+    
+                    with st.spinner(f"🎬 Getting recs for '{name}'..."):
+                        rec_resp = requests.get(rec_url, headers=headers, params=rec_params)
+    
+                    recs = rec_resp.json().get("results", [])
+                    if recs:
+                        used_qloo = True
+                        st.success(f"🎥 Qloo Recommendations for '{name}':")
+                        shown_ids = set()
+                        
+                        for r in recs[:10]:
+                            nm   = r["name"]
+                            props = r.get("properties", {}).get("external", {})
+                            rt   = props.get("imdb", {}).get("user_rating", "N/A")
+                            vt   = props.get("imdb", {}).get("user_rating_count", "N/A")
+                            tmdb_id = props.get("tmdb", {}).get("id")
+                        
+                            # Try TMDb search if no external ID
+                            if not tmdb_id:
+                                search = requests.get(
+                                    "https://api.themoviedb.org/3/search/movie",
+                                    params={"api_key": TMDB_API_KEY, "query": nm, "include_adult": False}
+                                ).json().get("results", [])
+                                if search:
+                                    tmdb_id = search[0]["id"]
+                        
+                            # Skip if we've already shown this tmdb_id
+                            if tmdb_id and tmdb_id in shown_ids:
+                                continue
+                            shown_ids.add(tmdb_id)
+                        
+                            # Fetch and display details
+                            title, poster_url, overview = get_tmdb_details(nm, tmdb_id)
+                        
+                            if poster_url:
+                                st.image(poster_url, width=120)
+                            st.markdown(f"**🎬 {title}** — {rt} ⭐ ({vt} votes)")
+                            if overview:
+                                st.markdown(f"📝 {overview}")
+                            st.markdown("---")
+                    else:
+                        st.warning("Qloo found the movie but returned no recommendations. Falling back to TMDb.")
+    
+            # 2) Fallback to TMDb if no Qloo recommendations shown
+            if movie_input and not used_qloo:
+                st.info("🔄 Fetching from TMDb as fallback…")
+                search_url = "https://api.themoviedb.org/3/search/movie"
+                params     = {"api_key": TMDB_API_KEY, "query": movie_input, "include_adult": False}
+                tmdb_search = requests.get(search_url, params=params).json().get("results", [])
+    
+                if not tmdb_search:
+                    st.error("❌ TMDb could not find that movie either.")
+                else:
+                    tmdb_id    = tmdb_search[0]["id"]
+                    tmdb_title = tmdb_search[0]["title"]
+                    st.success(f"🎬 TMDb Recommendations based on '{tmdb_title}':")
+    
+                    rec_url     = f"https://api.themoviedb.org/3/movie/{tmdb_id}/recommendations"
+                    rec_params  = {"api_key": TMDB_API_KEY, "language": "en-US", "page": 1}
+                    tmdb_recs   = requests.get(rec_url, params=rec_params).json().get("results", [])
+    
+                    if not tmdb_recs:
+                        st.warning("No TMDb recs found.")
+                    else:
+                        for rec in tmdb_recs[:10]:
+                            title       = rec["title"]
+                            overview    = rec.get("overview", "")
+                            rating      = rec.get("vote_average", "N/A")
+                            votes       = rec.get("vote_count", "N/A")
+                            poster_path = rec.get("poster_path")
+                            if poster_path:
+                                st.image(f"https://image.tmdb.org/t/p/w200{poster_path}", width=120)
+                            st.markdown(f"**🎬 {title}** — {rating} ⭐ ({votes} votes)")
                             st.markdown(f"📝 {overview}")
-                        st.markdown("---")
-                else:
-                    st.warning("Qloo found the movie but returned no recommendations. Falling back to TMDb.")
-
-        # 2) Fallback to TMDb if no Qloo recommendations shown
-        if movie_input and not used_qloo:
-            st.info("🔄 Fetching from TMDb as fallback…")
-            search_url = "https://api.themoviedb.org/3/search/movie"
-            params     = {"api_key": TMDB_API_KEY, "query": movie_input, "include_adult": False}
-            tmdb_search = requests.get(search_url, params=params).json().get("results", [])
-
-            if not tmdb_search:
-                st.error("❌ TMDb could not find that movie either.")
+                            st.markdown("---")
+    
+            # 3) Genre-based branch stays as-is…
+            #elif selected_genre:
+                # your existing Qloo-insights → TMDb fallback logic
+    
             else:
-                tmdb_id    = tmdb_search[0]["id"]
-                tmdb_title = tmdb_search[0]["title"]
-                st.success(f"🎬 TMDb Recommendations based on '{tmdb_title}':")
+                st.warning("Please enter a movie title or select a genre.")
 
-                rec_url     = f"https://api.themoviedb.org/3/movie/{tmdb_id}/recommendations"
-                rec_params  = {"api_key": TMDB_API_KEY, "language": "en-US", "page": 1}
-                tmdb_recs   = requests.get(rec_url, params=rec_params).json().get("results", [])
-
-                if not tmdb_recs:
-                    st.warning("No TMDb recs found.")
-                else:
-                    for rec in tmdb_recs[:10]:
-                        title       = rec["title"]
-                        overview    = rec.get("overview", "")
-                        rating      = rec.get("vote_average", "N/A")
-                        votes       = rec.get("vote_count", "N/A")
-                        poster_path = rec.get("poster_path")
-                        if poster_path:
-                            st.image(f"https://image.tmdb.org/t/p/w200{poster_path}", width=120)
-                        st.markdown(f"**🎬 {title}** — {rating} ⭐ ({votes} votes)")
-                        st.markdown(f"📝 {overview}")
-                        st.markdown("---")
-
-        # 3) Genre-based branch stays as-is…
-        #elif selected_genre:
-            # your existing Qloo-insights → TMDb fallback logic
-
-        else:
-            st.warning("Please enter a movie title or select a genre.")
+st.session_state.active_tab = "media"
 
 # === Tab 2: Fashion & Brands ===
 with tabs[1]:
-    st.header("👚 Clothing & Brand Recommendations")
-    st.markdown("Find clothing brands or outfits that match your media style or personality.")
-
-    media_type = st.radio("Input type:", ["Movie", "Genre", "Music"])
-    if media_type == "Movie":
-        user_input = st.text_input("Enter a movie title:")
-    elif media_type == "Genre":
-        user_input = st.selectbox("Select genre:", list(genre_to_tags.keys()))
-    else:
-        user_input = st.text_input("Enter a music genre:")
-
-    if st.button("Find My Style"):
-        mc = user_input if media_type == "Movie" else None
-        gc = user_input if media_type == "Genre" else None
-        mu = user_input if media_type == "Music" else None
-
-        archetypes = get_archetypes_from_media(movie=mc, genre=gc, music=mu)
-
-        if not archetypes:
-            st.warning("Sorry, we couldn't detect an aesthetic. Try another input.")
+    if st.session_state.active_tab == "fashion":
+        st.header("👚 Clothing & Brand Recommendations")
+        st.markdown("Find clothing brands or outfits that match your media style or personality.")
+    
+        media_type = st.radio("Input type:", ["Movie", "Genre", "Music"])
+        if media_type == "Movie":
+            user_input = st.text_input("Enter a movie title:")
+        elif media_type == "Genre":
+            user_input = st.selectbox("Select genre:", list(genre_to_tags.keys()))
         else:
-            st.success(f"Found these archetypes: {', '.join(archetypes)}")
-
-            cols = st.columns(2)
-            for idx, style in enumerate(archetypes):
-                with cols[idx % 2]:
-                    st.markdown(f"### 👗 {style.title()} Look")
-
-                    # Unsplash image
-                    q = style_search_terms.get(style, f"{style} outfit")
-                    resp = requests.get(
-                        "https://api.unsplash.com/search/photos",
-                        headers={"Authorization": f"Client-ID {UNSPLASH_ACCESS_KEY}"},
-                        params={"query": q, "per_page": 1}
-                    )
-                    img = resp.json().get("results", [])
-                    if img:
-                        thumb = img[0]["urls"]["small"]
-                        full = img[0]["urls"]["regular"]
-                        #st.image(thumb, use_container_width=True)
-                        st.markdown(
-                            f'''
-                            <a href="{full}" target="_blank" style="display:inline-block; overflow:hidden; border-radius:12px;">
-                                <img src="{thumb}" style="width:100%; transition: transform .3s; border-radius:12px;" 
-                                     onmouseover="this.style.transform='scale(1.05)'" 
-                                     onmouseout="this.style.transform='scale(1)'" />
-                            </a>
-                            ''',
-                            unsafe_allow_html=True
+            user_input = st.text_input("Enter a music genre:")
+    
+        if st.button("Find My Style"):
+            mc = user_input if media_type == "Movie" else None
+            gc = user_input if media_type == "Genre" else None
+            mu = user_input if media_type == "Music" else None
+    
+            archetypes = get_archetypes_from_media(movie=mc, genre=gc, music=mu)
+    
+            if not archetypes:
+                st.warning("Sorry, we couldn't detect an aesthetic. Try another input.")
+            else:
+                st.success(f"Found these archetypes: {', '.join(archetypes)}")
+    
+                cols = st.columns(2)
+                for idx, style in enumerate(archetypes):
+                    with cols[idx % 2]:
+                        st.markdown(f"### 👗 {style.title()} Look")
+    
+                        # Unsplash image
+                        q = style_search_terms.get(style, f"{style} outfit")
+                        resp = requests.get(
+                            "https://api.unsplash.com/search/photos",
+                            headers={"Authorization": f"Client-ID {UNSPLASH_ACCESS_KEY}"},
+                            params={"query": q, "per_page": 1}
                         )
+                        img = resp.json().get("results", [])
+                        if img:
+                            thumb = img[0]["urls"]["small"]
+                            full = img[0]["urls"]["regular"]
+                            #st.image(thumb, use_container_width=True)
+                            st.markdown(
+                                f'''
+                                <a href="{full}" target="_blank" style="display:inline-block; overflow:hidden; border-radius:12px;">
+                                    <img src="{thumb}" style="width:100%; transition: transform .3s; border-radius:12px;" 
+                                         onmouseover="this.style.transform='scale(1.05)'" 
+                                         onmouseout="this.style.transform='scale(1)'" />
+                                </a>
+                                ''',
+                                unsafe_allow_html=True
+                            )
+    
+    
+                        else:
+                            st.warning("No image found")
+    
+                        # Render suggested brands with Google search links
+                        brands = style_to_brands.get(style, ["Coming soon…"])
+                        brand_links = ", ".join(
+                            f"[🔸 {b}](https://www.google.com/search?q={urllib.parse.quote_plus(b + ' clothing')})"
+                            for b in brands
+                        )
+                        st.markdown("**🛍️ Suggested Brands:** " + brand_links)
+                        
+                        st.markdown("---")
+                        st.info(f"Based on your love for *{user_input}*, your style twin might love:")
+                        
+                        if st.button(f"🧪 Try '{style.title()}' in Fitting Room", key=f"try_{style}"):
+                            st.session_state["selected_style"] = style
+                            st.session_state["active_tab"] = "fitting_room"  # custom flag for switching tabs
+                            st.experimental_rerun()
 
-
-                    else:
-                        st.warning("No image found")
-
-                    # Render suggested brands with Google search links
-                    brands = style_to_brands.get(style, ["Coming soon…"])
-                    brand_links = ", ".join(
-                        f"[🔸 {b}](https://www.google.com/search?q={urllib.parse.quote_plus(b + ' clothing')})"
-                        for b in brands
-                    )
-                    st.markdown("**🛍️ Suggested Brands:** " + brand_links)
-                    
-                    st.markdown("---")
-                    st.info(f"Based on your love for *{user_input}*, your style twin might love:")
-
+st.session_state.active_tab = "fashion"  # for Tab 2
             
 # === Tab 3: AI Fitting Room ===
 with tabs[2]:
-    st.header("🧍 Virtual Fitting Simulation")
-    st.markdown("Try on clothing styles using your image and AI simulation.")
-    uploaded_file = st.file_uploader("📸 Upload a full-body photo (optional)", type=["jpg", "png"])
-    if uploaded_file:
-        st.image(uploaded_file, caption="Your uploaded photo", use_column_width=True)
-    st.info("🪞 AI-generated virtual fitting results will appear here.")
+    if st.session_state.active_tab == "fitting_room":
+        st.header("🧍 Virtual Fitting Simulation")
+        selected_style = st.session_state.get("selected_style")
 
-    # Footer
-    st.markdown("---")
-    st.markdown("Made with 💡 for the hackathon.")
+        if not selected_style:
+            st.warning("No style selected yet. Please pick a look in the Fashion tab.")
+        else:
+            st.success(f"👕 Showing looks for: {selected_style.title()}")
+
+            # Show sample outfits (e.g. using Unsplash)
+            q = style_search_terms.get(selected_style, f"{selected_style} outfit")
+            resp = requests.get(
+                "https://api.unsplash.com/search/photos",
+                headers={"Authorization": f"Client-ID {UNSPLASH_ACCESS_KEY}"},
+                params={"query": q, "per_page": 4}
+            )
+            images = resp.json().get("results", [])
+
+            cols = st.columns(2)
+            for idx, img in enumerate(images):
+                with cols[idx % 2]:
+                    st.image(img["urls"]["small"], use_container_width=True)
+                    st.caption(f"{selected_style.title()} Look #{idx+1}")
+
+
+st.session_state.active_tab = "fitting_room"
 
