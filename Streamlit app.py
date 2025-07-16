@@ -35,7 +35,20 @@ style_search_terms = {
     "90s-core":    "90s aesthetic outfit",
     "maximalist":  "colorful maximalist fashion",
     "classic":     "classic elegant fashion",
-    "preppy":      "preppy outfit aesthetic"
+    "preppy":      "preppy outfit aesthetic",
+        "normcore": "normcore fashion",
+    "utilitarian": "utilitarian outfit",
+    "alt": "alt fashion look",
+    "emo": "emo aesthetic outfit",
+    "softcore": "softcore aesthetic clothes",
+    "cozy": "cozy aesthetic fashion",
+    "eclectic": "eclectic fashion look",
+    "biker": "biker outfit aesthetic",
+    "scandi": "scandi fashion",
+    "y2k": "y2k fashion",
+    "artcore": "artcore fashion",
+    "experimental": "experimental outfit",
+    "conceptual": "conceptual fashion"
 }
 
 genre_to_tags = {
@@ -225,7 +238,10 @@ elif choice == TAB_FASHION:
                     f"[🔸 {b}](https://google.com/search?q={urllib.parse.quote_plus(b+' clothing')})"
                     for b in brands
                 )
-                st.markdown("**Brands:** " + links)
+                st.markdown("**🛍️ Brands:**<br>" + "<br>".join(
+                    f"<a href='https://google.com/search?q={urllib.parse.quote_plus(b + ' clothing')}' target='_blank'>{b}</a>"
+                    for b in brands
+                ), unsafe_allow_html=True)
 
                 if st.button(f"Try {style}", key=f"try_{style}"):
                     st.session_state.selected_style = style
