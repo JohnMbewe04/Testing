@@ -29,18 +29,7 @@ style_search_terms = {
     "90s-core": "90s aesthetic outfit",
     "maximalist": "colorful maximalist fashion",
     "classic": "classic elegant fashion",
-    "preppy": "preppy outfit aesthetic",
-    "normcore": "normcore fashion",
-    "alt": "alt fashion",
-    "utilitarian": "utilitarian outfit",
-    "softcore": "cozy aesthetic fashion",
-    "cozy": "cozy aesthetic clothes",
-    "artcore": "artcore fashion",
-    "experimental": "experimental fashion",
-    "conceptual": "conceptual fashion",
-    "biker": "biker fashion",
-    "emo": "emo outfit",
-    "y2k": "y2k fashion"
+    "preppy": "preppy outfit aesthetic"
 }
 
 
@@ -216,15 +205,23 @@ st.title("🧠 AI StyleTwin")
 st.caption("Discover your aesthetic twin in media and fashion.")
 
 # Create the main tabs
-tab_labels = ["🎬 Media Style Match", "👗 Fashion & Brands", "🧍‍♂️ AI Fitting Room"]
-if "active_tab" not in st.session_state or st.session_state.active_tab not in tab_labels:
-    st.session_state.active_tab = tab_labels[0]  # default to first tab
+TAB_LABELS = ["🎬 Media Style Match",
+              "👗 Fashion & Brands",
+              "🧍 AI Fitting Room"]
 
-selected_tab = st.radio("🧭 Navigate between views:", tab_labels, index=tab_labels.index(st.session_state.active_tab))
+if "active_tab" not in st.session_state:
+    st.session_state.active_tab = TAB_LABELS[0]
+
+# Top‐of‐page tab switcher
+choice = st.radio("Navigate:", TAB_LABELS,
+                  index=TAB_LABELS.index(st.session_state.active_tab),
+                  horizontal=True)
+st.session_state.active_tab = choice
+st.write("---")
 
 
 # === Tab 1: Media Style Match ===
-if selected_tab == tab_labels[0]:
+if choice == TAB_LABELS[0]:
     #if st.session_state.active_tab == "media":
         st.header("🎥 Movie & Song Recommendations")
         st.markdown("Input your favorite **movie title** or select a **genre** to get aesthetic recommendations.")
@@ -352,7 +349,7 @@ if selected_tab == tab_labels[0]:
    #     st.session_state.active_tab = "media"
 
 # === Tab 2: Fashion & Brands ===
-elif selected_tab == tab_labels[1]:
+elif choice == TAB_LABELS[1]:
     #if st.session_state.active_tab == "fashion":
         st.header("👚 Clothing & Brand Recommendations")
         st.markdown("Find clothing brands or outfits that match your media style or personality.")
@@ -420,25 +417,24 @@ elif selected_tab == tab_labels[1]:
                         st.markdown("---")
                         st.info(f"Based on your love for *{user_input}*, your style twin might love:")
                         
-                        if st.button(f"🧪 Try '{style.title()}' in Fitting Room", key=f"try_{style}"):
-                            st.session_state["selected_style"] = style
-                            st.session_state["active_tab"] = tab_labels[2]  # programmatic switch to Tab 3
+                        if st.button(f"Try {style}", key=f"try_{style}"):
+                            st.session_state.selected_style = style
+                            st.session_state.active_tab = TAB_LABELS[2]
                             st.experimental_rerun()
-
 
     #else:
     #    st.session_state.active_tab = "fashion"  # for Tab 2
             
 # === Tab 3: AI Fitting Room ===
-elif selected_tab == tab_labels[2]:
+else:
    # if st.session_state.active_tab == "fitting_room":
         st.header("🧍 Virtual Fitting Simulation")
-        selected_style = st.session_state.get("selected_style")
-
-        if not selected_style:
-            st.warning("No style selected yet. Please pick a look in the Fashion tab.")
+        style = st.session_state.get("selected_style")
+        if not style:
+            st.warning("Pick a style in the Fashion tab first.")
         else:
-            st.success(f"👕 Showing looks for: {selected_style.title()}")
+            st.success(f"Fitting Room: {style.title()} Look")
+
 
             # Show sample outfits (e.g. using Unsplash)
             q = style_search_terms.get(selected_style, f"{selected_style} outfit")
@@ -457,4 +453,3 @@ elif selected_tab == tab_labels[2]:
 
     #else:
     #    st.session_state.active_tab = "fitting_room"
-
