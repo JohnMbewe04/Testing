@@ -1,6 +1,7 @@
 import streamlit as st
 import requests
 import urllib.parse
+import base64
 
 # -------------------------------------------------------------------
 # Secrets & API Keys
@@ -9,6 +10,8 @@ QLOO_API_KEY        = st.secrets["api"]["qloo_key"]
 TMDB_API_KEY        = st.secrets["api"]["tmdb_key"]
 UNSPLASH_ACCESS_KEY = st.secrets["api"]["unsplash_key"]
 lastfm_API_KEY = st.secrets["api"]["lastfm_key"]
+SPOTIFY_CLIENT_ID = st.secrets["spotify"]["client_id"]
+SPOTIFY_CLIENT_SECRET = st.secrets["spotify"]["client_secret"]
 
 # -------------------------------------------------------------------
 # Style & Genre Mappings
@@ -243,7 +246,34 @@ def get_similar_songs(song_name, limit=5):
         for s in similar
     ]
 
+# --- Spotify Auth ---
+def get_spotify_token(client_id, client_secret):
+    auth_url = 'https://accounts.spotify.com/api/token'
+    auth_header = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
+    headers = {'Authorization': f'Basic {auth_header}'}
+    data = {'grant_type': 'client_credentials'}
+    resp = requests.post(auth_url, headers=headers, data=data)
+    return resp.json().get("access_token")
 
+# --- Spotify Search ---
+def get_spotify_song_data(song_name, token, limit=5):
+    search_url = "https://api.spotify.com/v1/search"
+    headers = {"Authorization": f"Bearer {token}"}
+    params = {"q": song_name, "type": "track", "limit": limit}
+
+    resp = requests.get(search_url, headers=headers, params=params).json()
+    tracks = resp.get("tracks", {}).get("items", [])
+
+    return [
+        {
+            "title": t["name"],
+            "artist": t["artists"][0]["name"],
+            "album_img": t["album"]["images"][0]["url"] if t["album"]["images"] else None,
+            "preview_url": t.get("preview_url"),
+            "spotify_url": t["external_urls"]["spotify"]
+        }
+        for t in tracks
+    ]
 
 # -------------------------------------------------------------------
 # Session State Setup
@@ -310,18 +340,32 @@ if choice == TAB_MEDIA:
     # ----------------------------
     else:
         song_input = st.text_input("Enter a song you like:")
-
+    
         if st.button("Get Similar Songs"):
             if not song_input:
                 st.warning("Please enter a song name first.")
             else:
-                with st.spinner("Searching for similar songs..."):
-                    similar_songs = get_similar_songs(song_input)  # <- You’ll define this
-                if not similar_songs:
+                with st.spinner("🔍 Getting Spotify previews..."):
+                    client_id = st.secrets["spotify"]["client_id"]
+                    client_secret = st.secrets["spotify"]["client_secret"]
+                    token = get_spotify_token(client_id, client_secret)
+                    songs = get_spotify_song_data(song_input, token)
+    
+                if not songs:
                     st.error("No similar tracks found.")
                 else:
-                    for track in similar_songs:
-                        st.markdown(f"🎧 **{track['title']}** by *{track['artist']}* — [▶️ Listen]({track['url']})")
+                    for song in songs:
+                        cols = st.columns([1, 4])
+                        with cols[0]:
+                            if song["album_img"]:
+                                st.image(song["album_img"], width=80)
+                        with cols[1]:
+                            st.markdown(f"**🎵 {song['title']}** by *{song['artist']}*")
+                            if song["preview_url"]:
+                                st.audio(song["preview_url"], format="audio/mp3")
+                            st.markdown(f"[🔗 Listen on Spotify]({song['spotify_url']})")
+                        st.write("---")
+
 
 
 # -------------------------------------------------------------------
