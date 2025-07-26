@@ -8,6 +8,7 @@ import urllib.parse
 QLOO_API_KEY        = st.secrets["api"]["qloo_key"]
 TMDB_API_KEY        = st.secrets["api"]["tmdb_key"]
 UNSPLASH_ACCESS_KEY = st.secrets["api"]["unsplash_key"]
+lastfm_API_KEY = st.secrets["api"]["lastfm_key"]
 
 # -------------------------------------------------------------------
 # Style & Genre Mappings
@@ -196,10 +197,8 @@ def get_streaming_platforms(movie_id, country_code):
     return [p["provider_name"] for p in platforms]
 
 def get_similar_songs(song_name, limit=5):
-    lastfm_API_KEY = st.secrets["api"]["lastfm_key"]
     base_url = "http://ws.audioscrobbler.com/2.0/"
 
-    # Step 1: Search for the song to get artist + track
     search_params = {
         "method": "track.search",
         "track": song_name,
@@ -210,13 +209,16 @@ def get_similar_songs(song_name, limit=5):
     search_resp = requests.get(base_url, params=search_params).json()
     results = search_resp.get("results", {}).get("trackmatches", {}).get("track", [])
 
+    # Ensure results is a list
+    if isinstance(results, dict):
+        results = [results]
+
     if not results:
         return []
 
     artist = results[0].get("artist")
     track = results[0].get("name")
 
-    # Step 2: Get similar songs
     sim_params = {
         "method": "track.getsimilar",
         "artist": artist,
@@ -229,14 +231,18 @@ def get_similar_songs(song_name, limit=5):
     sim_resp = requests.get(base_url, params=sim_params).json()
     similar = sim_resp.get("similartracks", {}).get("track", [])
 
+    if isinstance(similar, dict):
+        similar = [similar]
+
     return [
         {
-            "title": s["name"],
-            "artist": s["artist"]["name"],
-            "url": s["url"]
+            "title": s.get("name", "Unknown"),
+            "artist": s.get("artist", {}).get("name", "Unknown"),
+            "url": s.get("url", "#")
         }
         for s in similar
     ]
+
 
 
 # -------------------------------------------------------------------
