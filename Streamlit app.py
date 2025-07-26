@@ -195,6 +195,50 @@ def get_streaming_platforms(movie_id, country_code):
     platforms = response.get("results", {}).get(country_code, {}).get("flatrate", [])
     return [p["provider_name"] for p in platforms]
 
+def get_similar_songs(song_name, limit=5):
+    lastfm_API_KEY = st.secrets["api"]["lastfm_key"]
+    base_url = "http://ws.audioscrobbler.com/2.0/"
+
+    # Step 1: Search for the song to get artist + track
+    search_params = {
+        "method": "track.search",
+        "track": song_name,
+        "api_key": lastfm_API_KEY,
+        "format": "json",
+        "limit": 1
+    }
+    search_resp = requests.get(base_url, params=search_params).json()
+    results = search_resp.get("results", {}).get("trackmatches", {}).get("track", [])
+
+    if not results:
+        return []
+
+    artist = results[0].get("artist")
+    track = results[0].get("name")
+
+    # Step 2: Get similar songs
+    sim_params = {
+        "method": "track.getsimilar",
+        "artist": artist,
+        "track": track,
+        "api_key": lastfm_API_KEY,
+        "format": "json",
+        "limit": limit
+    }
+
+    sim_resp = requests.get(base_url, params=sim_params).json()
+    similar = sim_resp.get("similartracks", {}).get("track", [])
+
+    return [
+        {
+            "title": s["name"],
+            "artist": s["artist"]["name"],
+            "url": s["url"]
+        }
+        for s in similar
+    ]
+
+
 # -------------------------------------------------------------------
 # Session State Setup
 # -------------------------------------------------------------------
@@ -224,29 +268,55 @@ st.session_state.active_tab = choice
 st.write("---")
 
 # -------------------------------------------------------------------
-# Media Style Match
+# Media Style Match + Music Recommendations
 # -------------------------------------------------------------------
 if choice == TAB_MEDIA:
     st.header("🎥 Media Style Match")
-    st.markdown("Tell me a movie, genre, or music and I'll find your fashion twin.")
+    st.caption("Discover your fashion style or find similar songs based on your tastes.")
 
-    movie_input = st.text_input("Enter a movie title:")
-    selected_genre = st.selectbox("…or pick a genre:", [""] + genre_options)
-    music_input = st.text_input("…or enter a music genre:")
+    # Radio to choose mode
+    mode = st.radio("Choose mode:", ["🎬 Find My Fashion Style", "🎵 Get Similar Songs"], horizontal=True)
 
-    if st.button("Get Recommendations"):
-        if not any([movie_input, selected_genre, music_input]):
-            st.warning("Please enter a movie title, genre, or music genre first.")
-        else:
-            st.session_state.archetypes = get_archetypes_from_media(
-                movie=movie_input or None,
-                genre=selected_genre or None,
-                music=music_input or None
-            )
-            st.session_state.selected_style = None
-            st.toast("Jumping to Fashion tab...", icon="🎯")
-            st.session_state.active_tab = TAB_FASHION
-            st.experimental_rerun()
+    # ----------------------------
+    # 🎬 Mode 1: Fashion Archetypes
+    # ----------------------------
+    if mode == "🎬 Find My Fashion Style":
+        movie_input = st.text_input("Enter a movie title:")
+        selected_genre = st.selectbox("…or pick a genre:", [""] + genre_options)
+        music_input = st.text_input("…or enter a music genre:")
+
+        if st.button("Get Recommendations"):
+            if not any([movie_input, selected_genre, music_input]):
+                st.warning("Please enter a movie title, genre, or music genre first.")
+            else:
+                st.session_state.archetypes = get_archetypes_from_media(
+                    movie=movie_input or None,
+                    genre=selected_genre or None,
+                    music=music_input or None
+                )
+                st.session_state.selected_style = None
+                st.toast("Jumping to Fashion tab...", icon="🎯")
+                st.session_state.active_tab = TAB_FASHION
+                st.experimental_rerun()
+
+    # ----------------------------
+    # 🎵 Mode 2: Music Recommendations
+    # ----------------------------
+    else:
+        song_input = st.text_input("Enter a song you like:")
+
+        if st.button("Get Similar Songs"):
+            if not song_input:
+                st.warning("Please enter a song name first.")
+            else:
+                with st.spinner("Searching for similar songs..."):
+                    similar_songs = get_similar_songs(song_input)  # <- You’ll define this
+                if not similar_songs:
+                    st.error("No similar tracks found.")
+                else:
+                    for track in similar_songs:
+                        st.markdown(f"🎧 **{track['title']}** by *{track['artist']}* — [▶️ Listen]({track['url']})")
+
 
 # -------------------------------------------------------------------
 # Fashion & Brands
