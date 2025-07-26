@@ -319,11 +319,10 @@ if choice == TAB_MEDIA:
     if mode == "🎬 Find My Fashion Style":
         movie_input = st.text_input("Enter a movie title:")
         selected_genre = st.selectbox("…or pick a genre:", [""] + genre_options)
-        music_input = st.text_input("…or enter a music genre:")
 
         if st.button("Get Recommendations"):
-            if not any([movie_input, selected_genre, music_input]):
-                st.warning("Please enter a movie title, genre, or music genre first.")
+            if not any([movie_input, selected_genre]):
+                st.warning("Please enter a movie title or genre.")
             else:
                 st.session_state.archetypes = get_archetypes_from_media(
                     movie=movie_input or None,
