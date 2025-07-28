@@ -248,8 +248,8 @@ def get_streaming_platforms(movie_id, country_code):
     url = f"https://api.themoviedb.org/3/movie/{movie_id}/watch/providers"
     params = {"api_key": TMDB_API_KEY}
     response = requests.get(url, params=params).json()
-    platforms = response.get("results", {}).get(country_code, {}).get("flatrate", [])
-    return [p["provider_name"] for p in platforms]
+    flatrate = response.get("results", {}).get(country_code, {}).get("flatrate", [])
+    return flatrate  # Returns list of dicts (name, logo_path, provider_id, etc.)
 
 def get_similar_songs(song_name, limit=5):
     base_url = "http://ws.audioscrobbler.com/2.0/"
@@ -455,17 +455,18 @@ if choice == TAB_MEDIA:
             
                     movie_id = m.get("id")
                     if movie_id:
-                        providers = get_streaming_platforms(movie_id, st.session_state.user_country)
+                        providers = get_streaming_platforms(m["id"], st.session_state.user_country)
                         if providers:
-                            PLATFORM_URLS = {
-                                "Netflix": "https://www.netflix.com",
-                                "Disney+": "https://www.disneyplus.com",
-                                "Amazon Prime Video": "https://www.primevideo.com",
-                                "Hulu": "https://www.hulu.com",
-                                "Apple TV+": "https://tv.apple.com"
-                            }
-                            links = [f"[{name}]({PLATFORM_URLS.get(name, '#')})" for name in providers]
-                            st.markdown("🌐 Available on: " + ", ".join(links))
+                            st.markdown("🌐 Available on:")
+                            logos = st.columns(len(providers))
+                            for i, p in enumerate(providers):
+                                logo_url = f"https://image.tmdb.org/t/p/w45{p['logo_path']}" if p.get("logo_path") else None
+                                provider_name = p.get("provider_name")
+                                with logos[i]:
+                                    if logo_url:
+                                        st.image(logo_url, width=40, caption=provider_name)
+                                    else:
+                                        st.markdown(f"**{provider_name}**")
                         else:
                             st.caption("Streaming availability not found for your region.")
                 st.write("---")
