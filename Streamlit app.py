@@ -422,12 +422,12 @@ if choice == TAB_MEDIA:
     # ----------------------------
     if mode == "🎬 Find My Fashion Style":
         # Check if "?tab=fashion" in the URL and reroute
-        query_params = st.experimental_get_query_params()
+        query_params = st.query_params
         if "tab" in query_params and query_params["tab"][0] == "fashion":
             st.session_state.active_tab = TAB_FASHION
             st.rerun()
 
-        # ✅ Show floating button only if fashion is ready
+        # Floating button (only show after recommendations)
         if st.session_state.ready_for_fashion:
             st.markdown("""
                 <style>
@@ -448,11 +448,11 @@ if choice == TAB_MEDIA:
                         background-color: #c71c4d;
                     }
                 </style>
-            
+        
                 <div id="floating-button">
-                    <form action="?tab=fashion" method="post">
-                        <button type="submit" style="background:none;border:none;color:inherit;font:inherit;cursor:pointer;">👗 Explore Fashion</button>
-                    </form>
+                    <a href="?tab=fashion" target="_self" style="text-decoration:none; color:white;">
+                        👗 Explore Fashion
+                    </a>
                 </div>
             """, unsafe_allow_html=True)
 
