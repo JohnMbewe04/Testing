@@ -16,7 +16,7 @@ SPOTIFY_CLIENT_SECRET = st.secrets["spotify"]["client_secret"]
 # -------------------------------------------------------------------
 # Style & Genre Mappings
 # -------------------------------------------------------------------
-genre_options = ["comedy","horror","romance","action","animation","crime","sci-fi","drama", "anime"]
+genre_options = ["comedy","horror","romance","action","animation","crime","sci-fi","drama"]
 
 style_search_terms = {
     "indie":       "indie aesthetic outfit",
