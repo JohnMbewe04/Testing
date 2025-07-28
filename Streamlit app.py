@@ -324,6 +324,8 @@ for key, default in [
 ]:
     if key not in st.session_state:
         st.session_state[key] = default
+        if "ready_for_fashion" not in st.session_state:
+            st.session_state.ready_for_fashion = False
 
 # -------------------------------------------------------------------
 # Layout
@@ -365,7 +367,13 @@ if choice == TAB_MEDIA:
                     music=None
                 )
                 st.session_state.selected_style = None
-                st.toast("Jumping to Fashion tab...", icon="🎯")
+                st.session_state.ready_for_fashion = True  # Set flag but do NOT switch tab
+                st.success("Style archetypes found! You can now explore fashion looks.")
+
+        if st.session_state.ready_for_fashion:
+            st.markdown("---")
+            st.subheader("🎯 Fashion styles inspired by your selection")
+            if st.button("Explore Fashion Recommendations"):
                 st.session_state.active_tab = TAB_FASHION
                 st.rerun()
 
