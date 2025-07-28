@@ -447,8 +447,6 @@ if choice == TAB_MEDIA:
                 with cols[1]:
                     st.markdown(f"**{m['title']}**")
                     st.caption(m["overview"] or "No description available.")
-        
-                    # 🧠 Add streaming links
                     providers = get_streaming_platforms(m["id"], st.session_state.user_country)
                     if providers:
                         PLATFORM_URLS = {
