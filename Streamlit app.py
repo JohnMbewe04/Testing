@@ -367,7 +367,7 @@ if choice == TAB_MEDIA:
                 st.session_state.selected_style = None
                 st.toast("Jumping to Fashion tab...", icon="🎯")
                 st.session_state.active_tab = TAB_FASHION
-                st.experimental_rerun()
+                st.rerun()
 
     # ----------------------------
     # 🎵 Mode 2: Music Recommendations
@@ -433,11 +433,11 @@ elif choice == TAB_FASHION:
                 if st.button(f"Try {style}", key=f"try_{style}"):
                     st.session_state.selected_style = style
                     st.session_state.active_tab = TAB_FIT
-                    st.experimental_rerun()
+                    st.rerun()
 
         if st.button("🔙 Back to Media Tab"):
             st.session_state.active_tab = TAB_MEDIA
-            st.experimental_rerun()
+            st.rerun()
 
 # -------------------------------------------------------------------
 # AI Fitting Room
@@ -462,4 +462,4 @@ else:
 
         if st.button("🔙 Back to Fashion Tab"):
             st.session_state.active_tab = TAB_FASHION
-            st.experimental_rerun()
+            st.rerun()
