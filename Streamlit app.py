@@ -248,8 +248,13 @@ def get_streaming_platforms(movie_id, country_code):
     url = f"https://api.themoviedb.org/3/movie/{movie_id}/watch/providers"
     params = {"api_key": TMDB_API_KEY}
     response = requests.get(url, params=params).json()
-    flatrate = response.get("results", {}).get(country_code, {}).get("flatrate", [])
-    return flatrate  # Returns list of dicts (name, logo_path, provider_id, etc.)
+    
+    country_info = response.get("results", {}).get(country_code, {})
+    flatrate = country_info.get("flatrate", [])
+    link = country_info.get("link", None)  # Generic landing page
+    
+    return flatrate, link
+
 
 def get_similar_songs(song_name, limit=5):
     base_url = "http://ws.audioscrobbler.com/2.0/"
@@ -455,7 +460,7 @@ if choice == TAB_MEDIA:
             
                     movie_id = m.get("id")
                     if movie_id:
-                        providers = get_streaming_platforms(m["id"], st.session_state.user_country)
+                        providers, landing_link = get_streaming_platforms(m["id"], st.session_state.user_country)
                         if providers:
                             st.markdown("🌐 Available on:")
                             logos = st.columns(len(providers))
@@ -464,7 +469,13 @@ if choice == TAB_MEDIA:
                                 provider_name = p.get("provider_name")
                                 with logos[i]:
                                     if logo_url:
-                                        st.image(logo_url, width=40, caption=provider_name)
+                                        if landing_link:
+                                            st.markdown(
+                                                f"<a href='{landing_link}' target='_blank'><img src='{logo_url}' width='40' title='{provider_name}'></a>",
+                                                unsafe_allow_html=True
+                                            )
+                                        else:
+                                            st.image(logo_url, width=40, caption=provider_name)
                                     else:
                                         st.markdown(f"**{provider_name}**")
                         else:
