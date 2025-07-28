@@ -219,12 +219,13 @@ def get_similar_movies(movie_name, limit=5):
 
 def get_movies_by_genre(genre_name, country_code="US"):
     GENRE_MAP = {
-        "Action": 28, "Comedy": 35, "Drama": 18, "Sci-Fi": 878,
-        "Romance": 10749, "Horror": 27
+        "action": 28, "comedy": 35, "drama": 18, "sci-fi": 878,
+        "romance": 10749, "horror": 27, "animation": 16, "crime": 80
         # Add more genres if needed
     }
-    genre_id = GENRE_MAP.get(genre_name)
+    genre_id = GENRE_MAP.get(genre_name.lower())
     if not genre_id:
+        st.warning("Selected genre is not supported.")
         return []
 
     url = "https://api.themoviedb.org/3/discover/movie"
