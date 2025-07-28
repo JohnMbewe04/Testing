@@ -209,6 +209,7 @@ def get_similar_movies(movie_name, limit=5):
 
     return [
         {
+            "id": r.get("id"),
             "title": r.get("title"),
             "overview": r.get("overview", ""),
             "poster": f"https://image.tmdb.org/t/p/w200{r['poster_path']}" if r.get("poster_path") else None
