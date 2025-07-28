@@ -324,8 +324,9 @@ for key, default in [
 ]:
     if key not in st.session_state:
         st.session_state[key] = default
-        if "ready_for_fashion" not in st.session_state:
-            st.session_state.ready_for_fashion = False
+
+if "ready_for_fashion" not in st.session_state:
+    st.session_state.ready_for_fashion = False
 
 # -------------------------------------------------------------------
 # Layout
