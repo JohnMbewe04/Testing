@@ -440,28 +440,33 @@ if choice == TAB_MEDIA:
         if st.session_state.similar_movies:
             st.markdown("### 🎬 You Might Also Like")
             for m in st.session_state.similar_movies:
+                if not m or "title" not in m:
+                    continue  # skip invalid entries
+            
                 cols = st.columns([1, 4])
                 with cols[0]:
-                    if m["poster"]:
+                    if m.get("poster"):
                         st.image(m["poster"], width=100)
+            
                 with cols[1]:
-                    st.markdown(f"**{m['title']}**")
-                    st.caption(m["overview"] or "No description available.")
-                    providers = get_streaming_platforms(m["id"], st.session_state.user_country)
-                    if providers:
-                        PLATFORM_URLS = {
-                            "Netflix": "https://www.netflix.com",
-                            "Disney+": "https://www.disneyplus.com",
-                            "Amazon Prime Video": "https://www.primevideo.com",
-                            "Hulu": "https://www.hulu.com",
-                            "Apple TV+": "https://tv.apple.com"
-                            # Add more as needed
-                        }
-                        links = [f"[{name}]({PLATFORM_URLS.get(name, '#')})" for name in providers]
-                        st.markdown("🌐 Available on: " + ", ".join(links))
-                    else:
-                        st.caption("Streaming availability not found for your region.")
-        
+                    st.markdown(f"**{m.get('title', 'Untitled')}**")
+                    st.caption(m.get("overview", "No description available."))
+            
+                    movie_id = m.get("id")
+                    if movie_id:
+                        providers = get_streaming_platforms(movie_id, st.session_state.user_country)
+                        if providers:
+                            PLATFORM_URLS = {
+                                "Netflix": "https://www.netflix.com",
+                                "Disney+": "https://www.disneyplus.com",
+                                "Amazon Prime Video": "https://www.primevideo.com",
+                                "Hulu": "https://www.hulu.com",
+                                "Apple TV+": "https://tv.apple.com"
+                            }
+                            links = [f"[{name}]({PLATFORM_URLS.get(name, '#')})" for name in providers]
+                            st.markdown("🌐 Available on: " + ", ".join(links))
+                        else:
+                            st.caption("Streaming availability not found for your region.")
                 st.write("---")
 
         if st.session_state.ready_for_fashion:
