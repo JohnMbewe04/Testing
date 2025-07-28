@@ -16,7 +16,7 @@ SPOTIFY_CLIENT_SECRET = st.secrets["spotify"]["client_secret"]
 # -------------------------------------------------------------------
 # Style & Genre Mappings
 # -------------------------------------------------------------------
-genre_options = ["comedy","horror","romance","action","animation","crime","sci-fi","drama"]
+genre_options = ["comedy","horror","romance","action","animation","crime","sci-fi","drama", "anime"]
 
 style_search_terms = {
     "indie":       "indie aesthetic outfit",
@@ -216,6 +216,32 @@ def get_similar_movies(movie_name, limit=5):
         for r in recs
     ]
 
+def get_movies_by_genre(genre_name, country_code="US"):
+    GENRE_MAP = {
+        "Action": 28, "Comedy": 35, "Drama": 18, "Sci-Fi": 878,
+        "Romance": 10749, "Horror": 27
+        # Add more genres if needed
+    }
+    genre_id = GENRE_MAP.get(genre_name)
+    if not genre_id:
+        return []
+
+    url = "https://api.themoviedb.org/3/discover/movie"
+    params = {
+        "api_key": TMDB_API_KEY,
+        "with_genres": genre_id,
+        "region": country_code,
+        "sort_by": "popularity.desc",
+        "language": "en-US"
+    }
+    response = requests.get(url, params=params).json()
+    return [{
+        "title": m.get("title"),
+        "id": m.get("id"),
+        "poster": f"https://image.tmdb.org/t/p/w200{m['poster_path']}" if m.get("poster_path") else None,
+        "overview": m.get("overview")
+    } for m in response.get("results", [])]
+
 def get_streaming_platforms(movie_id, country_code):
     url = f"https://api.themoviedb.org/3/movie/{movie_id}/watch/providers"
     params = {"api_key": TMDB_API_KEY}
@@ -357,6 +383,9 @@ if "ready_for_fashion" not in st.session_state:
 if "similar_movies" not in st.session_state:
     st.session_state["similar_movies"] = []
 
+if "user_country" not in st.session_state:
+    st.session_state.user_country = get_user_country()
+
 # -------------------------------------------------------------------
 # Layout
 # -------------------------------------------------------------------
@@ -388,15 +417,21 @@ if choice == TAB_MEDIA:
         selected_genre = st.selectbox("…or pick a genre:", [""] + genre_options)
 
         if st.button("Get Recommendations"):
-            if not any([movie_input, selected_genre]):
+            if not movie_input and not selected_genre:
                 st.warning("Please enter a movie title or genre.")
             else:
                 st.session_state.archetypes = get_archetypes_from_media(
-                movie=movie_input or None,
-                genre=selected_genre or None,
-                music=None
-            )
-                st.session_state.similar_movies = get_similar_movies(movie_input)
+                    movie=movie_input or None,
+                    genre=selected_genre or None,
+                    music=None
+                )
+        
+                # 🎬 Fallback logic for similar movies
+                if movie_input:
+                    st.session_state.similar_movies = get_similar_movies(movie_input)
+                elif selected_genre:
+                    st.session_state.similar_movies = get_movies_by_genre(selected_genre, st.session_state.user_country)
+        
                 st.session_state.selected_style = None
                 st.session_state.ready_for_fashion = True
                 st.success("Style archetypes and movie recommendations loaded!")
@@ -411,6 +446,23 @@ if choice == TAB_MEDIA:
                 with cols[1]:
                     st.markdown(f"**{m['title']}**")
                     st.caption(m["overview"] or "No description available.")
+        
+                    # 🧠 Add streaming links
+                    providers = get_streaming_platforms(m["id"], st.session_state.user_country)
+                    if providers:
+                        PLATFORM_URLS = {
+                            "Netflix": "https://www.netflix.com",
+                            "Disney+": "https://www.disneyplus.com",
+                            "Amazon Prime Video": "https://www.primevideo.com",
+                            "Hulu": "https://www.hulu.com",
+                            "Apple TV+": "https://tv.apple.com"
+                            # Add more as needed
+                        }
+                        links = [f"[{name}]({PLATFORM_URLS.get(name, '#')})" for name in providers]
+                        st.markdown("🌐 Available on: " + ", ".join(links))
+                    else:
+                        st.caption("Streaming availability not found for your region.")
+        
                 st.write("---")
 
         if st.session_state.ready_for_fashion:
