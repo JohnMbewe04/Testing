@@ -255,6 +255,41 @@ def get_spotify_token(client_id, client_secret):
     resp = requests.post(auth_url, headers=headers, data=data)
     return resp.json().get("access_token")
 
+def get_similar_songs_spotify(song_name, token, limit=5):
+    # 1. Search for the song to get its track ID
+    search_url = "https://api.spotify.com/v1/search"
+    headers = {"Authorization": f"Bearer {token}"}
+    search_params = {"q": song_name, "type": "track", "limit": 1}
+    search_resp = requests.get(search_url, headers=headers, params=search_params).json()
+    items = search_resp.get("tracks", {}).get("items", [])
+    
+    if not items:
+        return []
+
+    seed_track_id = items[0]["id"]
+
+    # 2. Use the track ID to get recommendations
+    rec_url = "https://api.spotify.com/v1/recommendations"
+    rec_params = {
+        "limit": limit,
+        "seed_tracks": seed_track_id
+    }
+
+    rec_resp = requests.get(rec_url, headers=headers, params=rec_params).json()
+    rec_tracks = rec_resp.get("tracks", [])
+
+    return [
+        {
+            "title": t["name"],
+            "artist": t["artists"][0]["name"],
+            "album_img": t["album"]["images"][0]["url"] if t["album"]["images"] else None,
+            "preview_url": t.get("preview_url"),
+            "spotify_url": t["external_urls"]["spotify"]
+        }
+        for t in rec_tracks
+    ]
+
+
 # --- Spotify Search ---
 def get_spotify_song_data(song_name, token, limit=5):
     search_url = "https://api.spotify.com/v1/search"
@@ -327,7 +362,7 @@ if choice == TAB_MEDIA:
                 st.session_state.archetypes = get_archetypes_from_media(
                     movie=movie_input or None,
                     genre=selected_genre or None,
-                    music=music_input or None
+                    music=None
                 )
                 st.session_state.selected_style = None
                 st.toast("Jumping to Fashion tab...", icon="🎯")
@@ -348,8 +383,8 @@ if choice == TAB_MEDIA:
                     client_id = st.secrets["spotify"]["client_id"]
                     client_secret = st.secrets["spotify"]["client_secret"]
                     token = get_spotify_token(client_id, client_secret)
-                    songs = get_spotify_song_data(song_input, token)
-    
+                    songs = get_similar_songs_spotify(song_input, token)
+
                 if not songs:
                     st.error("No similar tracks found.")
                 else:
