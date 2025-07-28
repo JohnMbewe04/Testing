@@ -518,12 +518,12 @@ if choice == TAB_MEDIA:
                             st.caption("Streaming availability not found for your region.")
                 st.write("---")
 
-        '''if st.session_state.ready_for_fashion:
+        if st.session_state.ready_for_fashion:
             st.markdown("---")
             st.markdown("### 👗 Ready to explore fashion inspired by these vibes?")
             if st.button("Explore Fashion Recommendations"):
                 st.session_state.active_tab = TAB_FASHION
-                st.rerun()'''
+                st.rerun()
 
     # ----------------------------
     # 🎵 Mode 2: Music Recommendations
