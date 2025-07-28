@@ -2,6 +2,7 @@ import streamlit as st
 import requests
 import urllib.parse
 import base64
+from urllib.parse import parse_qs
 
 # -------------------------------------------------------------------
 # Secrets & API Keys
@@ -420,6 +421,41 @@ if choice == TAB_MEDIA:
     # 🎬 Mode 1: Fashion Archetypes
     # ----------------------------
     if mode == "🎬 Find My Fashion Style":
+        # Check if "?tab=fashion" in the URL and reroute
+        query_params = st.experimental_get_query_params()
+        if "tab" in query_params and query_params["tab"][0] == "fashion":
+            st.session_state.active_tab = TAB_FASHION
+            st.rerun()
+
+        # ✅ Show floating button only if fashion is ready
+        if st.session_state.ready_for_fashion:
+            st.markdown("""
+                <style>
+                    #floating-button {
+                        position: fixed;
+                        top: 70px;
+                        right: 25px;
+                        z-index: 9999;
+                        background-color: #f63366;
+                        color: white;
+                        padding: 0.5em 1em;
+                        border-radius: 8px;
+                        font-weight: bold;
+                        text-align: center;
+                        box-shadow: 2px 2px 10px rgba(0,0,0,0.2);
+                    }
+                    #floating-button:hover {
+                        background-color: #c71c4d;
+                    }
+                </style>
+            
+                <div id="floating-button">
+                    <form action="?tab=fashion" method="post">
+                        <button type="submit" style="background:none;border:none;color:inherit;font:inherit;cursor:pointer;">👗 Explore Fashion</button>
+                    </form>
+                </div>
+            """, unsafe_allow_html=True)
+
         movie_input = st.text_input("Enter a movie title:")
         selected_genre = st.selectbox("…or pick a genre:", [""] + genre_options)
 
@@ -482,12 +518,12 @@ if choice == TAB_MEDIA:
                             st.caption("Streaming availability not found for your region.")
                 st.write("---")
 
-        if st.session_state.ready_for_fashion:
+        '''if st.session_state.ready_for_fashion:
             st.markdown("---")
             st.markdown("### 👗 Ready to explore fashion inspired by these vibes?")
             if st.button("Explore Fashion Recommendations"):
                 st.session_state.active_tab = TAB_FASHION
-                st.rerun()
+                st.rerun()'''
 
     # ----------------------------
     # 🎵 Mode 2: Music Recommendations
