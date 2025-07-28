@@ -422,7 +422,7 @@ if choice == TAB_MEDIA:
     # ----------------------------
     if mode == "🎬 Find My Fashion Style":
         # Check if "?tab=fashion" in the URL and reroute
-        query_params = st.experimental_get_query_params()
+        query_params = st.query_params()
         if "tab" in query_params and query_params["tab"][0] == "fashion":
             st.session_state.active_tab = TAB_FASHION
             st.rerun()
