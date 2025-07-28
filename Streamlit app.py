@@ -192,6 +192,30 @@ def get_tmdb_details(name, tmdb_id=None):
     poster_url = f"https://image.tmdb.org/t/p/w200{poster}" if poster else None
     return title, poster_url, overview
 
+def get_similar_movies(movie_name, limit=5):
+    search_url = "https://api.themoviedb.org/3/search/movie"
+    params = {"api_key": TMDB_API_KEY, "query": movie_name}
+    search_resp = requests.get(search_url, params=params).json()
+    results = search_resp.get("results", [])
+
+    if not results:
+        return []
+
+    movie_id = results[0]["id"]
+    rec_url = f"https://api.themoviedb.org/3/movie/{movie_id}/recommendations"
+    rec_params = {"api_key": TMDB_API_KEY}
+    rec_resp = requests.get(rec_url, params=rec_params).json()
+    recs = rec_resp.get("results", [])[:limit]
+
+    return [
+        {
+            "title": r.get("title"),
+            "overview": r.get("overview", ""),
+            "poster": f"https://image.tmdb.org/t/p/w200{r['poster_path']}" if r.get("poster_path") else None
+        }
+        for r in recs
+    ]
+
 def get_streaming_platforms(movie_id, country_code):
     url = f"https://api.themoviedb.org/3/movie/{movie_id}/watch/providers"
     params = {"api_key": TMDB_API_KEY}
@@ -310,6 +334,8 @@ def get_spotify_song_data(song_name, token, limit=5):
         for t in tracks
     ]
 
+
+
 # -------------------------------------------------------------------
 # Session State Setup
 # -------------------------------------------------------------------
@@ -327,6 +353,9 @@ for key, default in [
 
 if "ready_for_fashion" not in st.session_state:
     st.session_state.ready_for_fashion = False
+
+if "similar_movies" not in st.session_state:
+    st.session_state["similar_movies"] = []
 
 # -------------------------------------------------------------------
 # Layout
@@ -363,17 +392,30 @@ if choice == TAB_MEDIA:
                 st.warning("Please enter a movie title or genre.")
             else:
                 st.session_state.archetypes = get_archetypes_from_media(
-                    movie=movie_input or None,
-                    genre=selected_genre or None,
-                    music=None
-                )
+                movie=movie_input or None,
+                genre=selected_genre or None,
+                music=None
+            )
+                st.session_state.similar_movies = get_similar_movies(movie_input)
                 st.session_state.selected_style = None
-                st.session_state.ready_for_fashion = True  # Set flag but do NOT switch tab
-                st.success("Style archetypes found! You can now explore fashion looks.")
+                st.session_state.ready_for_fashion = True
+                st.success("Style archetypes and movie recommendations loaded!")
+
+        if st.session_state.similar_movies:
+            st.markdown("### 🎬 You Might Also Like")
+            for m in st.session_state.similar_movies:
+                cols = st.columns([1, 4])
+                with cols[0]:
+                    if m["poster"]:
+                        st.image(m["poster"], width=100)
+                with cols[1]:
+                    st.markdown(f"**{m['title']}**")
+                    st.caption(m["overview"] or "No description available.")
+                st.write("---")
 
         if st.session_state.ready_for_fashion:
             st.markdown("---")
-            st.subheader("🎯 Fashion styles inspired by your selection")
+            st.markdown("### 👗 Ready to explore fashion inspired by these vibes?")
             if st.button("Explore Fashion Recommendations"):
                 st.session_state.active_tab = TAB_FASHION
                 st.rerun()
