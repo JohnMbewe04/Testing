@@ -357,13 +357,7 @@ def get_similar_songs_spotify(song_name, token, limit=5):
         }
         for t in rec_tracks
     ]
-    if not songs:
-        st.warning("Trying alternate music source...")
-        songs = get_similar_songs(song_input)
-
-
-
-
+    
 # --- Spotify Search ---
 def get_spotify_song_data(song_name, token, limit=5):
     search_url = "https://api.spotify.com/v1/search"
