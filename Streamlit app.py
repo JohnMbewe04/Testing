@@ -400,6 +400,9 @@ if "similar_movies" not in st.session_state:
 if "user_country" not in st.session_state:
     st.session_state.user_country = get_user_country()
 
+if "movie_page" not in st.session_state:
+    st.session_state.movie_page = 1
+
 # -------------------------------------------------------------------
 # Layout
 # -------------------------------------------------------------------
@@ -449,6 +452,7 @@ if choice == TAB_MEDIA:
                 st.session_state.selected_style = None
                 st.session_state.ready_for_fashion = True
                 st.success("Style archetypes and movie recommendations loaded!")
+                st.session_state.movie_page = 1
 
         if st.session_state.similar_movies:
             st.markdown("### 🎬 You Might Also Like")
