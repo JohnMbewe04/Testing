@@ -337,7 +337,9 @@ def get_similar_songs_spotify(song_name, token, limit=5):
     rec_url = "https://api.spotify.com/v1/recommendations"
     rec_params = {
         "limit": limit,
-        "seed_tracks": seed_track_id
+        "market": st.session_state.user_country,
+        "seed_tracks": seed_track_id,
+        "seed_artists": items[0]["artists"][0]["id"]
     }
 
     rec_resp = requests.get(rec_url, headers=headers, params=rec_params)
