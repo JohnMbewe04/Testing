@@ -4,6 +4,7 @@ import urllib.parse
 import base64
 from urllib.parse import parse_qs
 import streamlit.components.v1 as components
+import random
 
 
 # -------------------------------------------------------------------
@@ -266,12 +267,21 @@ def get_archetypes_from_media(movie=None, genre=None, music=None):
         arch.update(tag_to_style.get(t, []))
     return list(arch)
 
-@st.cache_data(ttl=300)
-def get_outfit_images(q, per_page=4):
+@st.cache_data(ttl=0, show_spinner=False)
+def get_outfit_images(q, per_page=8):
+    # Add random query param and page number to fetch different results
+    random_suffix = random.randint(0, 10000)
+    page_num = random.randint(1, 5)
+
+    query = f"{q} {random_suffix}"  # Add randomness to query
     resp = requests.get(
         "https://api.unsplash.com/search/photos",
         headers={"Authorization": f"Client-ID {UNSPLASH_ACCESS_KEY}"},
-        params={"query": q, "per_page": per_page}
+        params={
+            "query": query,
+            "per_page": per_page,
+            "page": page_num
+        }
     )
     return resp.json().get("results", [])
 
