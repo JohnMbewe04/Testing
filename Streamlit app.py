@@ -377,6 +377,12 @@ TAB_MEDIA   = "🎬 Media Style Match"
 TAB_FASHION = "👗 Fashion & Brands"
 TAB_FIT     = "🧍 AI Fitting Room"
 
+# Read URL query parameters and update active tab if needed
+params = st.query_params
+if params.get("tab") == ["fashion"]:
+    st.session_state.active_tab = TAB_FASHION
+    st.query_params.clear()  # Clear to avoid rerun loop
+
 for key, default in [
     ("active_tab", TAB_MEDIA),
     ("archetypes", []),
@@ -450,9 +456,7 @@ if choice == TAB_MEDIA:
                 </style>
         
                 <div id="floating-button">
-                    <a href="?tab=fashion" target="_self" style="text-decoration:none; color:white;">
-                        👗 Explore Fashion
-                    </a>
+                    <a href='?tab=fashion' style='color:white; text-decoration:none;'>👗 Explore Fashion</a>
                 </div>
             """, unsafe_allow_html=True)
 
