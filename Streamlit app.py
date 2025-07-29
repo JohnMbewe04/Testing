@@ -130,7 +130,7 @@ tag_to_style = {
 # Include: genre_to_tags, music_to_tags, tag_to_style, style_to_brands
 # [Insert same dictionaries from your previous code here]
 
-#@st.cache_data
+@st.cache_data
 def load_lottie_url(url):
     r = requests.get(url)
     if r.status_code != 200:
