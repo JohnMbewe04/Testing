@@ -763,20 +763,27 @@ else:
         st.warning("First, pick a look in the Fashion tab.")
     else:
         st.success(f"Fitting Room – {style.title()} Look")
+    
         selfie = st.camera_input("📸 Take a selfie") or st.file_uploader("…or upload an image")
         if selfie:
             st.image(selfie, caption="You", width=200)
-            st.markdown("### 🧥 Try on an Outfit")
-        
-            with st.spinner("Loading outfit previews..."):
-                outfits = get_outfit_images(style_search_terms[style], per_page=8)
-        
-            if outfits:
-                image_urls = [o["urls"]["regular"] for o in outfits if "urls" in o]
+    
+            # Initialize outfits in session if not already loaded or if user requests refresh
+            if "fitting_room_outfits" not in st.session_state:
+                with st.spinner("Loading style options..."):
+                    st.session_state.fitting_room_outfits = get_outfit_images(style_search_terms[style], per_page=8)
+    
+            # Button to refresh outfits
+            if st.button("🔄 Refresh Recommendations"):
+                with st.spinner("Refreshing looks..."):
+                    st.session_state.fitting_room_outfits = get_outfit_images(style_search_terms[style], per_page=8)
+                st.rerun()
+    
+            if st.session_state.fitting_room_outfits:
+                image_urls = [o["urls"]["regular"] for o in st.session_state.fitting_room_outfits if "urls" in o]
                 render_coverflow(image_urls)
             else:
-                st.warning("No outfits found.")
-
+                st.warning("No outfit images found.")
 
         if st.button("🔙 Back to Fashion Tab"):
             st.session_state.active_tab = TAB_FASHION
