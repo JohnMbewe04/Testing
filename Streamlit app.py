@@ -345,7 +345,11 @@ TAB_FIT     = "🧍 AI Fitting Room"
 for key, default in [
     ("active_tab", TAB_MEDIA),
     ("archetypes", []),
-    ("selected_style", None)
+    ("selected_style", None),
+    ("ready_for_fashion", False),
+    ("similar_movies", []),
+    ("user_country", get_user_country()),
+    ("movie_page", 1)
 ]:
     if key not in st.session_state:
         st.session_state[key] = default
@@ -360,7 +364,6 @@ selected_tab = st.radio("Go to:", tabs,
 # ✅ Only update session_state if the user clicks a different tab
 if selected_tab != st.session_state.active_tab:
     st.session_state.active_tab = selected_tab
-
 st.write("---")
 
 if "ready_for_fashion" not in st.session_state:
@@ -551,11 +554,12 @@ if st.session_state.active_tab == TAB_MEDIA:
                             st.session_state.archetypes = get_archetypes_from_media(music=song_input)
                             st.session_state.ready_for_fashion = True
     
-                    # ✅ Button always visible once ready
-                    if st.session_state.ready_for_fashion:
-                        if st.button("🎨 Explore Fashion Based on Music"):
-                            st.session_state.active_tab = TAB_FASHION
-                            st.rerun()
+        if st.session_state.ready_for_fashion:
+            st.markdown("---")
+            st.markdown("### 👗 Ready to explore fashion inspired by these vibes?")
+            if st.button("Explore Fashion Recommendations"):
+                st.session_state.active_tab = TAB_FASHION
+                st.rerun()
 
 # -------------------------------------------------------------------
 # Fashion & Brands
