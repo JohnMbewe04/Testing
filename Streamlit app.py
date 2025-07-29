@@ -131,37 +131,110 @@ tag_to_style = {
 def render_coverflow(images):
     html_code = f"""
     <style>
-    .coverflow {{
-        display: flex;
-        overflow-x: auto;
-        scroll-snap-type: x mandatory;
-        -webkit-overflow-scrolling: touch;
-        padding: 20px;
-        gap: 16px;
-        justify-content: center;
+    .slider-container {{
+        position: relative;
+        width: 100%;
+        max-width: 100%;
+        margin: auto;
+        overflow: hidden;
+        padding: 10px 0;
     }}
-    .coverflow img {{
-        scroll-snap-align: center;
+    .slider {{
+        display: flex;
+        gap: 16px;
+        transition: transform 0.3s ease;
+        padding: 10px;
+        scroll-behavior: smooth;
+    }}
+    .slider::-webkit-scrollbar {{
+        display: none;
+    }}
+    .slide {{
+        flex: 0 0 auto;
         width: 200px;
         height: 300px;
-        object-fit: cover;
         border-radius: 12px;
-        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
-        transition: transform 0.3s ease;
+        overflow: hidden;
+        box-shadow: 0 6px 12px rgba(0,0,0,0.25);
         cursor: pointer;
+        transition: transform 0.2s ease;
     }}
-    .coverflow img:hover {{
-        transform: scale(1.1);
-        z-index: 2;
+    .slide img {{
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
     }}
+    .slide:hover {{
+        transform: scale(1.05);
+    }}
+    .arrow {{
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 2rem;
+        background-color: rgba(255,255,255,0.8);
+        border: none;
+        padding: 8px;
+        border-radius: 50%;
+        cursor: pointer;
+        z-index: 10;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }}
+    .arrow:hover {{
+        background-color: rgba(255,255,255,1);
+    }}
+    #leftArrow {{ left: 10px; }}
+    #rightArrow {{ right: 10px; }}
     </style>
 
-    <div class="coverflow">
-        {''.join(f'<img src="{url}" alt="outfit">' for url in images)}
+    <div class="slider-container">
+        <button class="arrow" id="leftArrow">&#10094;</button>
+        <div class="slider" id="slider">
+            {''.join(f'<div class="slide"><img src="{url}"></div>' for url in images)}
+        </div>
+        <button class="arrow" id="rightArrow">&#10095;</button>
     </div>
-    """
-    components.html(html_code, height=350, scrolling=True)
 
+    <script>
+    const slider = document.getElementById('slider');
+    const leftArrow = document.getElementById('leftArrow');
+    const rightArrow = document.getElementById('rightArrow');
+
+    leftArrow.onclick = () => slider.scrollBy({ left: -220, behavior: 'smooth' });
+    rightArrow.onclick = () => slider.scrollBy({ left: 220, behavior: 'smooth' });
+
+    let isDown = false;
+    let startX;
+    let scrollLeft;
+
+    slider.addEventListener('mousedown', (e) => {{
+        isDown = true;
+        slider.classList.add('active');
+        startX = e.pageX - slider.offsetLeft;
+        scrollLeft = slider.scrollLeft;
+    }});
+
+    slider.addEventListener('mouseleave', () => {{
+        isDown = false;
+        slider.classList.remove('active');
+    }});
+
+    slider.addEventListener('mouseup', () => {{
+        isDown = false;
+        slider.classList.remove('active');
+    }});
+
+    slider.addEventListener('mousemove', (e) => {{
+        if (!isDown) return;
+        e.preventDefault();
+        const x = e.pageX - slider.offsetLeft;
+        const walk = (x - startX) * 2;
+        slider.scrollLeft = scrollLeft - walk;
+    }});
+    </script>
+    """
+    import streamlit.components.v1 as components
+    components.html(html_code, height=380, scrolling=False)
 
 # -------------------------------------------------------------------
 # Helpers
@@ -688,17 +761,17 @@ else:
         selfie = st.camera_input("📸 Take a selfie") or st.file_uploader("…or upload an image")
         if selfie:
             st.image(selfie, caption="You", width=200)
-        
             st.markdown("### 🧥 Try on an Outfit")
         
             with st.spinner("Loading outfit previews..."):
-                outfits = get_outfit_images(style_search_terms[style], per_page=10)
+                outfits = get_outfit_images(style_search_terms[style], per_page=8)
         
             if outfits:
                 image_urls = [o["urls"]["regular"] for o in outfits if "urls" in o]
                 render_coverflow(image_urls)
             else:
                 st.warning("No outfits found.")
+
 
         if st.button("🔙 Back to Fashion Tab"):
             st.session_state.active_tab = TAB_FASHION
