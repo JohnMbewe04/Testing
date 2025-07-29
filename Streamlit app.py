@@ -383,16 +383,12 @@ st.set_page_config(page_title="AI StyleTwin", layout="wide")
 st.title("🧠 AI StyleTwin")
 st.caption("Discover your aesthetic twin in media and fashion.")
 
-choice = st.radio("Go to:", [TAB_MEDIA, TAB_FASHION, TAB_FIT],
-    index=[TAB_MEDIA, TAB_FASHION, TAB_FIT].index(st.session_state.active_tab),
-    horizontal=True)
-st.session_state.active_tab = choice
 st.write("---")
 
 # -------------------------------------------------------------------
 # Media Style Match + Music Recommendations
 # -------------------------------------------------------------------
-if choice == TAB_MEDIA:
+if st.session_state.active_tab == TAB_MEDIA:
     st.header("🎥 Media Style Match")
     st.caption("Discover your fashion style or find similar songs based on your tastes.")
 
@@ -564,7 +560,7 @@ if choice == TAB_MEDIA:
 # -------------------------------------------------------------------
 # Fashion & Brands
 # -------------------------------------------------------------------
-elif choice == TAB_FASHION:
+elif st.session_state.active_tab == TAB_FASHION:
     st.header("👚 Fashion & Brand Recommendations")
 
     if not st.session_state.archetypes:
