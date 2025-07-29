@@ -427,39 +427,6 @@ if choice == TAB_MEDIA:
     # 🎬 Mode 1: Fashion Archetypes
     # ----------------------------
     if mode == "🎬 Find My Fashion Style":
-        # Check if "?tab=fashion" in the URL and reroute
-        query_params = st.query_params
-        if "tab" in query_params and query_params["tab"][0] == "fashion":
-            st.session_state.active_tab = TAB_FASHION
-            st.rerun()
-
-        # Floating button (only show after recommendations)
-        if st.session_state.ready_for_fashion:
-            st.markdown("""
-                <style>
-                    #floating-button {
-                        position: fixed;
-                        top: 70px;
-                        right: 25px;
-                        z-index: 9999;
-                        background-color: #f63366;
-                        color: white;
-                        padding: 0.5em 1em;
-                        border-radius: 8px;
-                        font-weight: bold;
-                        text-align: center;
-                        box-shadow: 2px 2px 10px rgba(0,0,0,0.2);
-                    }
-                    #floating-button:hover {
-                        background-color: #c71c4d;
-                    }
-                </style>
-        
-                <div id="floating-button">
-                    <a href='?tab=fashion' style='color:white; text-decoration:none;'>👗 Explore Fashion</a>
-                </div>
-            """, unsafe_allow_html=True)
-
         movie_input = st.text_input("Enter a movie title:")
         selected_genre = st.selectbox("…or pick a genre:", [""] + genre_options)
 
@@ -485,22 +452,37 @@ if choice == TAB_MEDIA:
 
         if st.session_state.similar_movies:
             st.markdown("### 🎬 You Might Also Like")
-            for m in st.session_state.similar_movies:
+        
+            # Pagination logic
+            page_size = 5
+            total = len(st.session_state.similar_movies)
+            total_pages = (total + page_size - 1) // page_size
+        
+            # Page selector (uses st.number_input or custom layout)
+            st.session_state.movie_page = st.slider(
+                "Browse pages", 1, total_pages, st.session_state.movie_page, label_visibility="collapsed"
+            )
+            
+            start_idx = (st.session_state.movie_page - 1) * page_size
+            end_idx = start_idx + page_size
+            current_movies = st.session_state.similar_movies[start_idx:end_idx]
+        
+            for m in current_movies:
                 if not m or "title" not in m:
                     continue  # skip invalid entries
-            
+        
                 cols = st.columns([1, 4])
                 with cols[0]:
                     if m.get("poster"):
                         st.image(m["poster"], width=100)
-            
+        
                 with cols[1]:
                     st.markdown(f"**{m.get('title', 'Untitled')}**")
                     st.caption(m.get("overview", "No description available."))
-            
+        
                     movie_id = m.get("id")
                     if movie_id:
-                        providers, landing_link = get_streaming_platforms(m["id"], st.session_state.user_country)
+                        providers, landing_link = get_streaming_platforms(movie_id, st.session_state.user_country)
                         if providers:
                             st.markdown("🌐 Available on:")
                             logos = st.columns(len(providers))
@@ -520,6 +502,7 @@ if choice == TAB_MEDIA:
                                         st.markdown(f"**{provider_name}**")
                         else:
                             st.caption("Streaming availability not found for your region.")
+        
                 st.write("---")
 
         if st.session_state.ready_for_fashion:
