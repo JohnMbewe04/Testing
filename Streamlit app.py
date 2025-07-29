@@ -318,23 +318,34 @@ def get_similar_songs_spotify(song_name, token, limit=5):
     search_url = "https://api.spotify.com/v1/search"
     headers = {"Authorization": f"Bearer {token}"}
     search_params = {"q": song_name, "type": "track", "limit": 1}
-    search_resp = requests.get(search_url, headers=headers, params=search_params).json()
-    items = search_resp.get("tracks", {}).get("items", [])
-    
+    search_resp = requests.get(search_url, headers=headers, params=search_params)
+
+    if search_resp.status_code != 200:
+        st.error(f"Spotify search failed: {search_resp.status_code}")
+        st.text(search_resp.text)  # display error response
+        return []
+
+    items = search_resp.json().get("tracks", {}).get("items", [])
     if not items:
         return []
 
     seed_track_id = items[0]["id"]
 
-    # 2. Use the track ID to get recommendations
+    # 2. Get recommendations
     rec_url = "https://api.spotify.com/v1/recommendations"
     rec_params = {
         "limit": limit,
         "seed_tracks": seed_track_id
     }
 
-    rec_resp = requests.get(rec_url, headers=headers, params=rec_params).json()
-    rec_tracks = rec_resp.get("tracks", [])
+    rec_resp = requests.get(rec_url, headers=headers, params=rec_params)
+    
+    if rec_resp.status_code != 200:
+        st.error(f"Spotify recommendations failed: {rec_resp.status_code}")
+        st.text(rec_resp.text)
+        return []
+
+    rec_tracks = rec_resp.json().get("tracks", [])
 
     return [
         {
@@ -346,6 +357,11 @@ def get_similar_songs_spotify(song_name, token, limit=5):
         }
         for t in rec_tracks
     ]
+    if not songs:
+        st.warning("Trying alternate music source...")
+        songs = get_similar_songs(song_input)
+
+
 
 
 # --- Spotify Search ---
