@@ -3,6 +3,8 @@ import requests
 import urllib.parse
 import base64
 from urllib.parse import parse_qs
+import streamlit.components.v1 as components
+
 
 # -------------------------------------------------------------------
 # Secrets & API Keys
@@ -125,6 +127,41 @@ tag_to_style = {
 # (other dictionaries omitted here to save space, same as previous version)
 # Include: genre_to_tags, music_to_tags, tag_to_style, style_to_brands
 # [Insert same dictionaries from your previous code here]
+
+def render_coverflow(images):
+    html_code = f"""
+    <style>
+    .coverflow {{
+        display: flex;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+        padding: 20px;
+        gap: 16px;
+        justify-content: center;
+    }}
+    .coverflow img {{
+        scroll-snap-align: center;
+        width: 200px;
+        height: 300px;
+        object-fit: cover;
+        border-radius: 12px;
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        transition: transform 0.3s ease;
+        cursor: pointer;
+    }}
+    .coverflow img:hover {{
+        transform: scale(1.1);
+        z-index: 2;
+    }}
+    </style>
+
+    <div class="coverflow">
+        {''.join(f'<img src="{url}" alt="outfit">' for url in images)}
+    </div>
+    """
+    components.html(html_code, height=350, scrolling=True)
+
 
 # -------------------------------------------------------------------
 # Helpers
@@ -653,21 +690,15 @@ else:
             st.image(selfie, caption="You", width=200)
         
             st.markdown("### 🧥 Try on an Outfit")
+        
             with st.spinner("Loading outfit previews..."):
-                outfits = get_outfit_images(style_search_terms[style], per_page=5)
+                outfits = get_outfit_images(style_search_terms[style], per_page=10)
         
             if outfits:
-                st.markdown("Scroll through the looks and pick your favorite:")
-        
-                # Show images in a horizontal layout (carousel feel)
-                cols = st.columns(len(outfits))
-                for i, outfit in enumerate(outfits):
-                    with cols[i]:
-                        st.image(outfit["urls"]["small"], caption=f"Look #{i+1}", use_container_width=True)
-                        if st.button(f"Select Look {i+1}", key=f"select_look_{i}"):
-                            st.success(f"You selected Look #{i+1}!")
+                image_urls = [o["urls"]["regular"] for o in outfits if "urls" in o]
+                render_coverflow(image_urls)
             else:
-                st.warning("No outfit images found.")
+                st.warning("No outfits found.")
 
         if st.button("🔙 Back to Fashion Tab"):
             st.session_state.active_tab = TAB_FASHION
