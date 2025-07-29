@@ -333,7 +333,36 @@ def get_spotify_song_data(song_name, token, limit=5):
         for t in tracks
     ]
 
+def detect_spotify_genre(song_name, token):
+    search_url = "https://api.spotify.com/v1/search"
+    headers = {"Authorization": f"Bearer {token}"}
+    params = {"q": song_name, "type": "track", "limit": 1}
 
+    resp = requests.get(search_url, headers=headers, params=params).json()
+    tracks = resp.get("tracks", {}).get("items", [])
+
+    if not tracks:
+        return None, None  # No result
+
+    track = tracks[0]
+    artist_id = track["artists"][0]["id"]
+
+    # Fetch artist details to get genre
+    artist_url = f"https://api.spotify.com/v1/artists/{artist_id}"
+    artist_resp = requests.get(artist_url, headers=headers).json()
+    genres = artist_resp.get("genres", [])
+
+    # Map Spotify genres to your defined keys
+    mapped_genre = None
+    for g in genres:
+        for known_genre in music_to_tags.keys():
+            if known_genre in g.lower():
+                mapped_genre = known_genre
+                break
+        if mapped_genre:
+            break
+
+    return mapped_genre, track["name"] + " - " + track["artists"][0]["name"]
 
 # -------------------------------------------------------------------
 # Session State Setup
@@ -524,39 +553,49 @@ if st.session_state.active_tab == TAB_MEDIA:
                     client_id = st.secrets["spotify"]["client_id"]
                     client_secret = st.secrets["spotify"]["client_secret"]
                     token = get_spotify_token(client_id, client_secret)
+        
                     if not token:
                         st.error("Failed to retrieve Spotify token.")
                     else:
-                        similar_tracks = get_similar_songs(song_input)
-    
-                        if not similar_tracks:
-                            st.error("No similar tracks found.")
+                        genre_key, display_song_name = detect_spotify_genre(song_input, token)
+        
+                        if not genre_key:
+                            st.error("Could not detect genre or no genre match found.")
                         else:
-                            spotify_enriched = []
-                            for track in similar_tracks:
-                                enriched = get_spotify_song_data(f"{track['title']} {track['artist']}", token, limit=1)
-                                if enriched:
-                                    spotify_enriched.append(enriched[0])
-    
-                            for song in spotify_enriched:
-                                cols = st.columns([1, 4])
-                                with cols[0]:
-                                    if song["album_img"]:
-                                        st.image(song["album_img"], width=80)
-                                with cols[1]:
-                                    st.markdown(f"**🎵 {song['title']}** by *{song['artist']}*")
-                                    if song["preview_url"]:
-                                        st.audio(song["preview_url"], format="audio/mp3")
-                                    st.markdown(f"[🔗 Listen on Spotify]({song['spotify_url']})")
-                                st.write("---")
-    
-                            # ✅ Get archetypes from music input and set session state
-                            st.session_state.archetypes = get_archetypes_from_media(music=song_input)
-                            st.session_state.ready_for_fashion = True
+                            st.success(f"Detected genre: **{genre_key.title()}**")
+        
+                            similar_tracks = get_similar_songs(song_input)
+                            if not similar_tracks:
+                                st.error("No similar tracks found.")
+                            else:
+                                spotify_enriched = []
+                                for track in similar_tracks:
+                                    enriched = get_spotify_song_data(f"{track['title']} {track['artist']}", token, limit=1)
+                                    if enriched:
+                                        spotify_enriched.append(enriched[0])
+        
+                                for song in spotify_enriched:
+                                    cols = st.columns([1, 4])
+                                    with cols[0]:
+                                        if song["album_img"]:
+                                            st.image(song["album_img"], width=80)
+                                    with cols[1]:
+                                        st.markdown(f"**🎵 {song['title']}** by *{song['artist']}*")
+                                        if song["preview_url"]:
+                                            st.audio(song["preview_url"], format="audio/mp3")
+                                        st.markdown(f"[🔗 Listen on Spotify]({song['spotify_url']})")
+                                    st.write("---")
+        
+                                # 🎯 Auto-generate fashion archetypes from genre
+                                st.session_state.archetypes = get_archetypes_from_media(music=genre_key)
+                                st.session_state.ready_for_fashion = True
+
     
         if st.session_state.ready_for_fashion:
             st.markdown("---")
-            st.markdown("### 👗 Ready to explore fashion inspired by these vibes?")
+            st.markdown(f"**👗 Suggested fashion styles:** {', '.join(st.session_state.archetypes)}")
+
+            #st.markdown("### 👗 Ready to explore fashion inspired by these vibes?")
             if st.button("Explore Fashion Recommendations"):
                 st.session_state.active_tab = TAB_FASHION
                 st.rerun()
