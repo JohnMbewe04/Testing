@@ -5,7 +5,8 @@ import base64
 from urllib.parse import parse_qs
 import streamlit.components.v1 as components
 import random
-
+from streamlit_lottie import st_lottie
+import json
 
 # -------------------------------------------------------------------
 # Secrets & API Keys
@@ -128,6 +129,13 @@ tag_to_style = {
 # (other dictionaries omitted here to save space, same as previous version)
 # Include: genre_to_tags, music_to_tags, tag_to_style, style_to_brands
 # [Insert same dictionaries from your previous code here]
+
+@st.cache_data
+def load_lottie_url(url: str):
+    response = requests.get(url)
+    if response.status_code != 200:
+        return None
+    return response.json()
 
 def render_coverflow(images):
     image_html = ''.join(f'<div class="slide"><img src="{url}"></div>' for url in images)
@@ -784,11 +792,19 @@ else:
                     st.session_state.fitting_room_outfits = get_outfit_images(style_search_terms[style], per_page=8)
     
             # Button to refresh outfits
-            if st.button("🔄 Refresh Recommendations"):
-                with st.spinner("Refreshing looks..."):
-                    st.session_state.fitting_room_outfits = get_outfit_images(style_search_terms[style], per_page=8)
-                st.rerun()
-    
+            if st.button("🔄 Refresh Outfits"):
+                # Show Lottie animation while fetching
+                with st.spinner("Fetching new styles..."):
+                    anim = load_lottie_url("https://lottie.host/25fdd713-53c2-4dd7-b6ad-5fbd8df0d0ae/gfD4exO6P6.json")
+                    st_lottie(anim, height=200, speed=1.2, loop=True)
+            
+                    # Optional: Delay just to show animation before refresh
+                    time.sleep(2)
+            
+                    # Force refresh outfits
+                    st.session_state.outfit_refresh_key = random.randint(1, 10000)
+                    st.rerun()
+
             if st.session_state.fitting_room_outfits:
                 image_urls = [o["urls"]["regular"] for o in st.session_state.fitting_room_outfits if "urls" in o]
                 render_coverflow(image_urls)
