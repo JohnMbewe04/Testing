@@ -462,10 +462,33 @@ if choice == TAB_MEDIA:
             total = len(st.session_state.similar_movies)
             total_pages = (total + page_size - 1) // page_size
         
-            # Page selector (uses st.number_input or custom layout)
-            st.session_state.movie_page = st.slider(
-                "Browse pages", 1, total_pages, st.session_state.movie_page, label_visibility="collapsed"
-            )
+            # Display pagination buttons (1 2 3 ... →)
+            st.markdown("""
+            <style>
+                button[kind="primary"] {
+                    border-radius: 6px;
+                    margin: 0 2px;
+                    padding: 0.3em 0.8em;
+                }
+            </style>
+            """, unsafe_allow_html=True)
+
+            pagination_cols = st.columns(total_pages + 2)  # Add 2 for ← and →
+
+            # "Previous" arrow
+            if pagination_cols[0].button("←", key="prev_page"):
+                if st.session_state.movie_page > 1:
+                    st.session_state.movie_page -= 1
+            
+            # Page number buttons
+            for i in range(total_pages):
+                if pagination_cols[i + 1].button(str(i + 1), key=f"page_{i+1}"):
+                    st.session_state.movie_page = i + 1
+            
+            # "Next" arrow
+            if pagination_cols[-1].button("→", key="next_page"):
+                if st.session_state.movie_page < total_pages:
+                    st.session_state.movie_page += 1
             
             start_idx = (st.session_state.movie_page - 1) * page_size
             end_idx = start_idx + page_size
