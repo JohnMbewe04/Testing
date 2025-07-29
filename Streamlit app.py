@@ -312,24 +312,6 @@ def get_spotify_token(client_id, client_secret):
     data = {'grant_type': 'client_credentials'}
     resp = requests.post(auth_url, headers=headers, data=data)
     return resp.json().get("access_token")
-
-def get_similar_songs_spotify(song_name, token, limit=5):
-    # First get similar songs from Last.fm
-    similar_tracks = get_similar_songs(song_input)
-    
-    # Then enrich with Spotify details
-    client_id = st.secrets["spotify"]["client_id"]
-    client_secret = st.secrets["spotify"]["client_secret"]
-    token = get_spotify_token(client_id, client_secret)
-    
-    # Pull Spotify details for the similar songs
-    spotify_enriched = []
-    for track in similar_tracks:
-        enriched = get_spotify_song_data(f"{track['title']} {track['artist']}", token, limit=1)
-        if enriched:
-            spotify_enriched.append(enriched[0])
-
-
     
 # --- Spotify Search ---
 def get_spotify_song_data(song_name, token, limit=5):
@@ -544,7 +526,7 @@ if choice == TAB_MEDIA:
                         if not similar_tracks:
                             st.error("No similar tracks found.")
                         else:
-                            token = get_spotify_token(client_id, client_secret)
+                            #token = get_spotify_token(client_id, client_secret)
                             spotify_enriched = []
                             for track in similar_tracks:
                                 enriched = get_spotify_song_data(f"{track['title']} {track['artist']}", token, limit=1)
@@ -562,23 +544,7 @@ if choice == TAB_MEDIA:
                                         st.audio(song["preview_url"], format="audio/mp3")
                                     st.markdown(f"[🔗 Listen on Spotify]({song['spotify_url']})")
                                 st.write("---")
-                if not songs:
-                    st.error("No similar tracks found.")
-                else:
-                    for song in songs:
-                        cols = st.columns([1, 4])
-                        with cols[0]:
-                            if song["album_img"]:
-                                st.image(song["album_img"], width=80)
-                        with cols[1]:
-                            st.markdown(f"**🎵 {song['title']}** by *{song['artist']}*")
-                            if song["preview_url"]:
-                                st.audio(song["preview_url"], format="audio/mp3")
-                            st.markdown(f"[🔗 Listen on Spotify]({song['spotify_url']})")
-                        st.write("---")
-
-
-
+                                
 # -------------------------------------------------------------------
 # Fashion & Brands
 # -------------------------------------------------------------------
