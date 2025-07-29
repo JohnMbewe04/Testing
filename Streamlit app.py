@@ -314,7 +314,6 @@ def get_spotify_token(client_id, client_secret):
     return resp.json().get("access_token")
 
 def get_similar_songs_spotify(song_name, token, limit=5):
-    # 1. Search for the song to get its track ID
     search_url = "https://api.spotify.com/v1/search"
     headers = {"Authorization": f"Bearer {token}"}
     search_params = {"q": song_name, "type": "track", "limit": 1}
@@ -322,16 +321,19 @@ def get_similar_songs_spotify(song_name, token, limit=5):
 
     if search_resp.status_code != 200:
         st.error(f"Spotify search failed: {search_resp.status_code}")
-        st.text(search_resp.text)  # display error response
+        st.text(search_resp.text)
         return []
 
-    items = search_resp.json().get("tracks", {}).get("items", [])
+    search_data = search_resp.json()
+    items = search_data.get("tracks", {}).get("items", [])
+    
     if not items:
+        st.warning("🎵 No matching track found for the input song.")
         return []
 
     seed_track_id = items[0]["id"]
+    st.write("Found seed track ID:", seed_track_id)
 
-    # 2. Get recommendations
     rec_url = "https://api.spotify.com/v1/recommendations"
     rec_params = {
         "limit": limit,
@@ -339,13 +341,17 @@ def get_similar_songs_spotify(song_name, token, limit=5):
     }
 
     rec_resp = requests.get(rec_url, headers=headers, params=rec_params)
-    
+
     if rec_resp.status_code != 200:
         st.error(f"Spotify recommendations failed: {rec_resp.status_code}")
-        st.text(rec_resp.text)
+        st.text("Raw error message: " + rec_resp.text)
         return []
 
     rec_tracks = rec_resp.json().get("tracks", [])
+
+    if not rec_tracks:
+        st.warning("No similar tracks returned from Spotify.")
+        return []
 
     return [
         {
@@ -357,6 +363,7 @@ def get_similar_songs_spotify(song_name, token, limit=5):
         }
         for t in rec_tracks
     ]
+
     
 # --- Spotify Search ---
 def get_spotify_song_data(song_name, token, limit=5):
@@ -563,7 +570,10 @@ if choice == TAB_MEDIA:
                     client_id = st.secrets["spotify"]["client_id"]
                     client_secret = st.secrets["spotify"]["client_secret"]
                     token = get_spotify_token(client_id, client_secret)
-                    songs = get_similar_songs_spotify(song_input, token)
+                    if not token:
+                        st.error("Failed to retrieve Spotify token.")
+                    else:
+                        songs = get_similar_songs_spotify(song_input, token)
 
                 if not songs:
                     st.error("No similar tracks found.")
