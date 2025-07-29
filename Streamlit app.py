@@ -342,11 +342,19 @@ TAB_MEDIA   = "🎬 Media Style Match"
 TAB_FASHION = "👗 Fashion & Brands"
 TAB_FIT     = "🧍 AI Fitting Room"
 
-# Read URL query parameters and update active tab if needed
-params = st.query_params
-if params.get("tab") == ["fashion"]:
-    st.session_state.active_tab = TAB_FASHION
-    st.query_params.clear()  # Clear to avoid rerun loop
+# 🛠 Tab Navigation (Make sure this sets from session state)
+tabs = [TAB_MEDIA, TAB_FASHION, TAB_FIT]
+selected_tab = st.radio("Go to:", tabs,
+    index=tabs.index(st.session_state.active_tab),
+    horizontal=True,
+    key="tab_selector"
+)
+# ✅ Only update session_state if the user clicks a different tab
+if selected_tab != st.session_state.active_tab:
+    st.session_state.active_tab = selected_tab
+
+st.write("---")
+
 
 for key, default in [
     ("active_tab", TAB_MEDIA),
