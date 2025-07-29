@@ -338,6 +338,10 @@ def get_spotify_song_data(song_name, token, limit=5):
 # -------------------------------------------------------------------
 # Session State Setup
 # -------------------------------------------------------------------
+TAB_MEDIA   = "🎬 Media Style Match"
+TAB_FASHION = "👗 Fashion & Brands"
+TAB_FIT     = "🧍 AI Fitting Room"
+
 for key, default in [
     ("active_tab", TAB_MEDIA),
     ("archetypes", []),
@@ -345,10 +349,6 @@ for key, default in [
 ]:
     if key not in st.session_state:
         st.session_state[key] = default
-        
-TAB_MEDIA   = "🎬 Media Style Match"
-TAB_FASHION = "👗 Fashion & Brands"
-TAB_FIT     = "🧍 AI Fitting Room"
 
 # 🛠 Tab Navigation (Make sure this sets from session state)
 tabs = [TAB_MEDIA, TAB_FASHION, TAB_FIT]
