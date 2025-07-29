@@ -129,13 +129,13 @@ tag_to_style = {
 # [Insert same dictionaries from your previous code here]
 
 def render_coverflow(images):
+    image_html = ''.join(f'<div class="slide"><img src="{url}"></div>' for url in images)
+
     html_code = f"""
     <style>
     .slider-container {{
         position: relative;
         width: 100%;
-        max-width: 100%;
-        margin: auto;
         overflow: hidden;
         padding: 10px 0;
     }}
@@ -145,6 +145,9 @@ def render_coverflow(images):
         transition: transform 0.3s ease;
         padding: 10px;
         scroll-behavior: smooth;
+        overflow-x: auto;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
     }}
     .slider::-webkit-scrollbar {{
         display: none;
@@ -190,7 +193,7 @@ def render_coverflow(images):
     <div class="slider-container">
         <button class="arrow" id="leftArrow">&#10094;</button>
         <div class="slider" id="slider">
-            {''.join(f'<div class="slide"><img src="{url}"></div>' for url in images)}
+            {image_html}
         </div>
         <button class="arrow" id="rightArrow">&#10095;</button>
     </div>
@@ -200,8 +203,12 @@ def render_coverflow(images):
     const leftArrow = document.getElementById('leftArrow');
     const rightArrow = document.getElementById('rightArrow');
 
-    leftArrow.onclick = () => slider.scrollBy({ left: -220, behavior: 'smooth' });
-    rightArrow.onclick = () => slider.scrollBy({ left: 220, behavior: 'smooth' });
+    leftArrow.addEventListener('click', () => {{
+        slider.scrollBy({{ left: -220, behavior: 'smooth' }});
+    }});
+    rightArrow.addEventListener('click', () => {{
+        slider.scrollBy({{ left: 220, behavior: 'smooth' }});
+    }});
 
     let isDown = false;
     let startX;
@@ -209,19 +216,16 @@ def render_coverflow(images):
 
     slider.addEventListener('mousedown', (e) => {{
         isDown = true;
-        slider.classList.add('active');
         startX = e.pageX - slider.offsetLeft;
         scrollLeft = slider.scrollLeft;
     }});
 
     slider.addEventListener('mouseleave', () => {{
         isDown = false;
-        slider.classList.remove('active');
     }});
 
     slider.addEventListener('mouseup', () => {{
         isDown = false;
-        slider.classList.remove('active');
     }});
 
     slider.addEventListener('mousemove', (e) => {{
@@ -233,8 +237,9 @@ def render_coverflow(images):
     }});
     </script>
     """
-    import streamlit.components.v1 as components
+
     components.html(html_code, height=380, scrolling=False)
+
 
 # -------------------------------------------------------------------
 # Helpers
