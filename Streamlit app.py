@@ -314,57 +314,21 @@ def get_spotify_token(client_id, client_secret):
     return resp.json().get("access_token")
 
 def get_similar_songs_spotify(song_name, token, limit=5):
-    search_url = "https://api.spotify.com/v1/search"
-    headers = {"Authorization": f"Bearer {token}"}
-    search_params = {"q": song_name, "type": "track", "limit": 1}
-    search_resp = requests.get(search_url, headers=headers, params=search_params)
-
-    if search_resp.status_code != 200:
-        st.error(f"Spotify search failed: {search_resp.status_code}")
-        st.text(search_resp.text)
-        return []
-
-    search_data = search_resp.json()
-    items = search_data.get("tracks", {}).get("items", [])
+    # First get similar songs from Last.fm
+    similar_tracks = get_similar_songs(song_input)
     
-    if not items:
-        st.warning("🎵 No matching track found for the input song.")
-        return []
+    # Then enrich with Spotify details
+    client_id = st.secrets["spotify"]["client_id"]
+    client_secret = st.secrets["spotify"]["client_secret"]
+    token = get_spotify_token(client_id, client_secret)
+    
+    # Pull Spotify details for the similar songs
+    spotify_enriched = []
+    for track in similar_tracks:
+        enriched = get_spotify_song_data(f"{track['title']} {track['artist']}", token, limit=1)
+        if enriched:
+            spotify_enriched.append(enriched[0])
 
-    seed_track_id = items[0]["id"]
-    st.write("Found seed track ID:", seed_track_id)
-
-    rec_url = "https://api.spotify.com/v1/recommendations"
-    rec_params = {
-        "limit": limit,
-        "market": st.session_state.user_country,
-        "seed_tracks": seed_track_id,
-        "seed_artists": items[0]["artists"][0]["id"]
-    }
-
-    rec_resp = requests.get(rec_url, headers=headers, params=rec_params)
-
-    if rec_resp.status_code != 200:
-        st.error(f"Spotify recommendations failed: {rec_resp.status_code}")
-        st.text("Raw error message: " + rec_resp.text)
-        return []
-
-    rec_tracks = rec_resp.json().get("tracks", [])
-
-    if not rec_tracks:
-        st.warning("No similar tracks returned from Spotify.")
-        return []
-
-    return [
-        {
-            "title": t["name"],
-            "artist": t["artists"][0]["name"],
-            "album_img": t["album"]["images"][0]["url"] if t["album"]["images"] else None,
-            "preview_url": t.get("preview_url"),
-            "spotify_url": t["external_urls"]["spotify"]
-        }
-        for t in rec_tracks
-    ]
 
     
 # --- Spotify Search ---
@@ -575,8 +539,29 @@ if choice == TAB_MEDIA:
                     if not token:
                         st.error("Failed to retrieve Spotify token.")
                     else:
-                        songs = get_similar_songs_spotify(song_input, token)
+                        similar_tracks = get_similar_songs(song_input)
 
+                        if not similar_tracks:
+                            st.error("No similar tracks found.")
+                        else:
+                            token = get_spotify_token(client_id, client_secret)
+                            spotify_enriched = []
+                            for track in similar_tracks:
+                                enriched = get_spotify_song_data(f"{track['title']} {track['artist']}", token, limit=1)
+                                if enriched:
+                                    spotify_enriched.append(enriched[0])
+                        
+                            for song in spotify_enriched:
+                                cols = st.columns([1, 4])
+                                with cols[0]:
+                                    if song["album_img"]:
+                                        st.image(song["album_img"], width=80)
+                                with cols[1]:
+                                    st.markdown(f"**🎵 {song['title']}** by *{song['artist']}*")
+                                    if song["preview_url"]:
+                                        st.audio(song["preview_url"], format="audio/mp3")
+                                    st.markdown(f"[🔗 Listen on Spotify]({song['spotify_url']})")
+                                st.write("---")
                 if not songs:
                     st.error("No similar tracks found.")
                 else:
