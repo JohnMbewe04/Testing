@@ -618,7 +618,7 @@ elif st.session_state.active_tab == TAB_FASHION:
                 with st.spinner("Fetching outfit image..."):
                     imgs = get_outfit_images(style_search_terms.get(style, f"{style} outfit"), per_page=1)
                 if imgs:
-                    st.image(imgs[0]["urls"]["small"], use_column_width=True)
+                    st.image(imgs[0]["urls"]["small"], use_container_width=True)
                 else:
                     st.warning("No preview image found.")
 
@@ -663,7 +663,7 @@ else:
                 cols = st.columns(len(outfits))
                 for i, outfit in enumerate(outfits):
                     with cols[i]:
-                        st.image(outfit["urls"]["small"], caption=f"Look #{i+1}", use_column_width=True)
+                        st.image(outfit["urls"]["small"], caption=f"Look #{i+1}", use_container_width=True)
                         if st.button(f"Select Look {i+1}", key=f"select_look_{i}"):
                             st.success(f"You selected Look #{i+1}!")
             else:
