@@ -651,12 +651,23 @@ else:
         selfie = st.camera_input("📸 Take a selfie") or st.file_uploader("…or upload an image")
         if selfie:
             st.image(selfie, caption="You", width=200)
-            with st.spinner("Loading style options..."):
-                outfits = get_outfit_images(style_search_terms[style], per_page=4)
-            cols = st.columns(2)
-            for i, o in enumerate(outfits):
-                with cols[i % 2]:
-                    st.image(o["urls"]["small"], caption=f"{style.title()} #{i+1}", use_column_width=True)
+        
+            st.markdown("### 🧥 Try on an Outfit")
+            with st.spinner("Loading outfit previews..."):
+                outfits = get_outfit_images(style_search_terms[style], per_page=5)
+        
+            if outfits:
+                st.markdown("Scroll through the looks and pick your favorite:")
+        
+                # Show images in a horizontal layout (carousel feel)
+                cols = st.columns(len(outfits))
+                for i, outfit in enumerate(outfits):
+                    with cols[i]:
+                        st.image(outfit["urls"]["small"], caption=f"Look #{i+1}", use_column_width=True)
+                        if st.button(f"Select Look {i+1}", key=f"select_look_{i}"):
+                            st.success(f"You selected Look #{i+1}!")
+            else:
+                st.warning("No outfit images found.")
 
         if st.button("🔙 Back to Fashion Tab"):
             st.session_state.active_tab = TAB_FASHION
