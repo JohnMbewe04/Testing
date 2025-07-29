@@ -509,7 +509,7 @@ if choice == TAB_MEDIA:
     # ----------------------------
     else:
         song_input = st.text_input("Enter a song you like:")
-    
+        
         if st.button("Get Similar Songs"):
             if not song_input:
                 st.warning("Please enter a song name first.")
@@ -522,17 +522,16 @@ if choice == TAB_MEDIA:
                         st.error("Failed to retrieve Spotify token.")
                     else:
                         similar_tracks = get_similar_songs(song_input)
-
+    
                         if not similar_tracks:
                             st.error("No similar tracks found.")
                         else:
-                            #token = get_spotify_token(client_id, client_secret)
                             spotify_enriched = []
                             for track in similar_tracks:
                                 enriched = get_spotify_song_data(f"{track['title']} {track['artist']}", token, limit=1)
                                 if enriched:
                                     spotify_enriched.append(enriched[0])
-                        
+    
                             for song in spotify_enriched:
                                 cols = st.columns([1, 4])
                                 with cols[0]:
@@ -544,7 +543,16 @@ if choice == TAB_MEDIA:
                                         st.audio(song["preview_url"], format="audio/mp3")
                                     st.markdown(f"[🔗 Listen on Spotify]({song['spotify_url']})")
                                 st.write("---")
-                                
+    
+                            # ✅ Get archetypes from music input and set session state
+                            st.session_state.archetypes = get_archetypes_from_media(music=song_input)
+                            st.session_state.ready_for_fashion = True
+    
+                            # ✅ Fashion exploration button
+                            if st.button("🎨 Explore Fashion Based on Music"):
+                                st.session_state.active_tab = TAB_FASHION
+                                st.rerun()
+
 # -------------------------------------------------------------------
 # Fashion & Brands
 # -------------------------------------------------------------------
