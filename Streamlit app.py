@@ -135,22 +135,26 @@ tag_to_style = {
 # [Insert same dictionaries from your previous code here]
 
 def try_on_idm_vton(person_url, cloth_url):
+    import replicate
     replicate_client = replicate.Client(api_token=st.secrets["replicate"]["api_token"])
 
     try:
-        version = "cuuupid/idm-vton:4b9aa54cc43e9277a54b5f0c3d05b65ae7f372d25c1290cd57fa40f2c2314d1b"
+        # Load the version object
+        version = replicate_client.models.get("cuuupid/idm-vton").versions.get(
+            "0513734a452173b8173e907e3a59d19a36266e55b48528559432bd21c7d7e985"
+        )
+
         input_data = {
             "image": person_url,
             "cloth": cloth_url,
-            "sleeve": "short",  # You can let user choose this later
+            "sleeve": "short",  # or let the user select
             "pose": "no",
             "dilate_kernel": 15
         }
 
         prediction = replicate_client.predictions.create(version=version, input=input_data)
-        status_url = prediction.urls.get("get")  # safer than response["urls"]["get"]
 
-        # Polling until prediction is done
+        # Polling until the prediction is ready
         while prediction.status not in ["succeeded", "failed"]:
             time.sleep(2)
             prediction.reload()
@@ -158,13 +162,12 @@ def try_on_idm_vton(person_url, cloth_url):
         if prediction.status == "succeeded":
             return prediction.output
         else:
-            st.error("Failed to generate try-on image.")
+            st.error(f"Virtual try-on failed: {prediction.error}")
             return None
 
     except Exception as e:
         st.error(f"An error occurred during virtual try-on: {str(e)}")
         return None
-
 
 @st.cache_data(ttl=600)
 def upload_to_imgbb(image_file):
