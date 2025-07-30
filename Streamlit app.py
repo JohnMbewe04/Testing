@@ -10,7 +10,8 @@ import json
 import time
 import streamlit_js_eval
 import streamlit.components.v1 as components
-import replicate
+from PIL import Image
+from io import BytesIO
 
 # -------------------------------------------------------------------
 # Secrets & API Keys
@@ -134,39 +135,29 @@ tag_to_style = {
 # Include: genre_to_tags, music_to_tags, tag_to_style, style_to_brands
 # [Insert same dictionaries from your previous code here]
 
-def try_on_idm_vton(person_url, cloth_url):
-    import replicate
-    replicate_client = replicate.Client(api_token=st.secrets["replicate"]["api_token"])
-
+# Function to blend selfie + outfit images
+def create_overlay_tryon(selfie_file, outfit_url):
     try:
-        # Load the version object
-        version = replicate_client.models.get("cuuupid/idm-vton").versions.get(
-            "0513734a452173b8173e907e3a59d19a36266e55b48528559432bd21c7d7e985"
-        )
+        # Load user's selfie
+        selfie_img = Image.open(selfie_file).convert("RGBA")
 
-        input_data = {
-            "image": person_url,
-            "cloth": cloth_url,
-            "sleeve": "short",  # or let the user select
-            "pose": "no",
-            "dilate_kernel": 15
-        }
+        # Load outfit image from URL
+        response = requests.get(outfit_url)
+        outfit_img = Image.open(BytesIO(response.content)).convert("RGBA")
 
-        prediction = replicate_client.predictions.create(version=version, input=input_data)
+        # Resize outfit to match width of selfie
+        outfit_img = outfit_img.resize(selfie_img.size, Image.ANTIALIAS)
 
-        # Polling until the prediction is ready
-        while prediction.status not in ["succeeded", "failed"]:
-            time.sleep(2)
-            prediction.reload()
+        # Reduce outfit transparency (adjust alpha as needed)
+        outfit_img.putalpha(128)
 
-        if prediction.status == "succeeded":
-            return prediction.output
-        else:
-            st.error(f"Virtual try-on failed: {prediction.error}")
-            return None
+        # Overlay outfit on selfie
+        combined = Image.alpha_composite(selfie_img, outfit_img)
+
+        return combined
 
     except Exception as e:
-        st.error(f"An error occurred during virtual try-on: {str(e)}")
+        st.error(f"Mock try-on failed: {str(e)}")
         return None
 
 @st.cache_data(ttl=600)
@@ -812,16 +803,11 @@ else:
             st.image(selected_outfit_url, width=200)
 
         if selfie and selected_outfit_url:
-            if st.button("Try it on!"):
-                with st.spinner("Uploading images..."):
-                    person_url = upload_to_imgbb(selfie)
-                    cloth_url = selected_outfit_url  # already a URL
-        
-                with st.spinner("Generating your try-on look..."):
-                    output = try_on_idm_vton(person_url, cloth_url)
-        
-                if output:
-                    st.image(output, caption="✨ Your Virtual Try-On", use_column_width=True)
+            if st.button("👕 Try On (Mock Preview)"):
+                with st.spinner("Preparing your mock try-on..."):
+                    result = create_overlay_tryon(selfie, selected_outfit_url)
+                if result:
+                    st.image(result, caption="✨ Your Mock Try-On", use_column_width=True)
             
         if selfie:
             st.image(selfie, caption="You", width=200)
