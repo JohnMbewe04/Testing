@@ -149,14 +149,24 @@ def get_clothing_crop(image_bytes):
     mask = get_binary_mask(image_bytes)
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-    # Find largest contour (assuming it's the clothing)
-    largest = max(contours, key=cv2.contourArea)
-    x, y, w, h = cv2.boundingRect(largest)
+    # Try to find a more garment-like contour
+    clothing_contours = []
+    for c in contours:
+        x, y, w, h = cv2.boundingRect(c)
+        aspect = h / w
+        if 0.5 < aspect < 2.5 and w > 100 and h > 100:
+            clothing_contours.append((c, cv2.contourArea(c)))
 
-    # Crop from original image
+    if clothing_contours:
+        clothing_contours.sort(key=lambda x: x[1], reverse=True)
+        best_c, _ = clothing_contours[0]
+        x, y, w, h = cv2.boundingRect(best_c)
+    else:
+        # Fallback to largest
+        x, y, w, h = cv2.boundingRect(max(contours, key=cv2.contourArea))
+
     img = Image.open(io.BytesIO(image_bytes))
-    cropped = img.crop((x, y, x + w, y + h))
-    return cropped
+    return img.crop((x, y, x + w, y + h))
 
 def mock_try_on_cleaned(user_image, outfit_url):
     try:
