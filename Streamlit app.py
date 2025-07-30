@@ -194,26 +194,28 @@ def get_clothing_crop(image_bytes):
 
 def mock_try_on_cleaned(user_image, outfit_url):
     try:
-        # Remove background from selfie
-        user_no_bg = Image.open(io.BytesIO(remove(user_image.getvalue()))).convert("RGBA")
+        # Step 1: Load and remove background
+        user_image_bytes = user_image.read() if hasattr(user_image, "read") else user_image.getvalue()
+        user_no_bg_bytes = remove(user_image_bytes)
+        user_no_bg = Image.open(io.BytesIO(user_no_bg_bytes)).convert("RGBA")
 
-        # Get cropped outfit region
+        # Step 2: Get outfit image and crop
         outfit_bytes = requests.get(outfit_url).content
         outfit_crop = get_clothing_crop(outfit_bytes).convert("RGBA")
 
-        # Resize outfit relative to user image
+        # Step 3: Resize outfit to fit user image width
         user_width, user_height = user_no_bg.size
         outfit_width = int(user_width * 0.6)
         outfit_height = int(outfit_width * outfit_crop.height / outfit_crop.width)
         outfit_resized = outfit_crop.resize((outfit_width, outfit_height))
 
-        # Create background
+        # Step 4: Create background canvas and paste selfie
         background = Image.new("RGBA", user_no_bg.size, (255, 255, 255, 255))
         background.paste(user_no_bg, (0, 0), user_no_bg)
 
-        # Place outfit roughly on chest
+        # Step 5: Overlay outfit
         x_pos = int((user_width - outfit_width) / 2)
-        y_pos = int(user_height * 0.35)
+        y_pos = int(user_height * 0.4)  # Adjust for better alignment
         background.paste(outfit_resized, (x_pos, y_pos), outfit_resized)
 
         return background.convert("RGB")
@@ -221,6 +223,7 @@ def mock_try_on_cleaned(user_image, outfit_url):
     except Exception as e:
         st.error(f"Mock try-on failed: {e}")
         return None
+
 
 @st.cache_data(ttl=600)
 def upload_to_imgbb(image_file):
