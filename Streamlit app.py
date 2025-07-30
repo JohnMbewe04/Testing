@@ -135,7 +135,7 @@ tag_to_style = {
 # [Insert same dictionaries from your previous code here]
 
 def try_on_idm_vton(person_url, cloth_url):
-    replicate_client = replicate.Client(api_token=st.secrets["replicate"]["token"])
+    replicate_client = replicate.Client(api_token=st.secrets["replicate"]["api_token"])
 
     try:
         version = "cuuupid/idm-vton:4b9aa54cc43e9277a54b5f0c3d05b65ae7f372d25c1290cd57fa40f2c2314d1b"
