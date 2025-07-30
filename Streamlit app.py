@@ -138,29 +138,51 @@ tag_to_style = {
 # (other dictionaries omitted here to save space, same as previous version)
 # Include: genre_to_tags, music_to_tags, tag_to_style, style_to_brands
 # [Insert same dictionaries from your previous code here]
+def get_binary_mask(image_bytes):
+    image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+    img_np = np.array(image)
+    gray = cv2.cvtColor(img_np, cv2.COLOR_RGB2GRAY)
+    _, thresh = cv2.threshold(gray, 10, 255, cv2.THRESH_BINARY)
+    return thresh
 
-def mock_try_on_cleaned(user_image, outfit_image):
+def get_clothing_crop(image_bytes):
+    mask = get_binary_mask(image_bytes)
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    # Find largest contour (assuming it's the clothing)
+    largest = max(contours, key=cv2.contourArea)
+    x, y, w, h = cv2.boundingRect(largest)
+
+    # Crop from original image
+    img = Image.open(io.BytesIO(image_bytes))
+    cropped = img.crop((x, y, x + w, y + h))
+    return cropped
+
+def mock_try_on_cleaned(user_image, outfit_url):
     try:
-        # Remove backgrounds
+        # Remove background from selfie
         user_no_bg = Image.open(io.BytesIO(remove(user_image.getvalue()))).convert("RGBA")
-        outfit_no_bg = Image.open(io.BytesIO(remove(requests.get(outfit_image).content))).convert("RGBA")
+
+        # Get cropped outfit region
+        outfit_bytes = requests.get(outfit_url).content
+        outfit_crop = get_clothing_crop(outfit_bytes).convert("RGBA")
 
         # Resize outfit relative to user image
         user_width, user_height = user_no_bg.size
         outfit_width = int(user_width * 0.6)
-        outfit_height = int(outfit_width * outfit_no_bg.height / outfit_no_bg.width)
-        outfit_resized = outfit_no_bg.resize((outfit_width, outfit_height))
+        outfit_height = int(outfit_width * outfit_crop.height / outfit_crop.width)
+        outfit_resized = outfit_crop.resize((outfit_width, outfit_height))
 
-        # Create a white background
+        # Create background
         background = Image.new("RGBA", user_no_bg.size, (255, 255, 255, 255))
         background.paste(user_no_bg, (0, 0), user_no_bg)
 
-        # Place outfit roughly centered on the user chest
+        # Place outfit roughly on chest
         x_pos = int((user_width - outfit_width) / 2)
         y_pos = int(user_height * 0.35)
         background.paste(outfit_resized, (x_pos, y_pos), outfit_resized)
 
-        return background.convert("RGB")  # Final image without alpha
+        return background.convert("RGB")
 
     except Exception as e:
         st.error(f"Mock try-on failed: {e}")
