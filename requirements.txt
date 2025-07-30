@@ -4,6 +4,4 @@ replicate
 rembg
 onnxruntime
 onnx
-opencv-python-headless==4.9.0.80
-transformers
 timm
