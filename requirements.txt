@@ -5,3 +5,5 @@ rembg
 onnxruntime
 onnx
 opencv-python
+transformers
+timm
