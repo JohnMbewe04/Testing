@@ -852,86 +852,37 @@ elif st.session_state.active_tab == TAB_FASHION:
 # AI Fitting Room
 # -------------------------------------------------------------------
 else:
-    st.header("🧍 Virtual Fitting Room")
+    st.header("🧍 Virtual Style Preview")
     style = st.session_state.selected_style
 
     if not style:
         st.warning("First, pick a look in the Fashion tab.")
     else:
-        st.success(f"Fitting Room – {style.title()} Look")
-    
-        selfie = st.camera_input("📸 Take a selfie") or st.file_uploader("…or upload an image")
-        selected_outfit_url = st.session_state.get("selected_outfit_url")  # store this when user clicks an outfit
+        st.success(f"Previewing: {style.title()} Style")
 
-        if selected_outfit_url:
-            st.markdown("### 🧥 Selected Outfit")
-            st.image(selected_outfit_url, width=200)
+        # Fetch or reuse outfits
+        if "fitting_room_outfits" not in st.session_state or st.button("🔄 Refresh Looks"):
+            with st.spinner("Loading style options..."):
+                anim = load_lottie_url("https://assets4.lottiefiles.com/packages/lf20_puciaact.json")
+                if anim:
+                    st_lottie(anim, height=180)
+                time.sleep(1)
+                st.session_state.fitting_room_outfits = get_outfit_images(style_search_terms[style], per_page=10)
 
-        if selfie and selected_outfit_url:
-            if st.button("👕 Try it on (Mock)!"):
-                with st.spinner("Preparing your mock try-on..."):
-                    output_img = mock_try_on_cleaned(selfie, selected_outfit_url)
-                if output_img:
-                    st.image(output_img, caption="✨ Your Virtual Mock Try-On", use_column_width=True)
-        if selfie:
-            st.image(selfie, caption="You", width=200)
-    
-            # Initialize outfits in session if not already loaded or if user requests refresh
-            if "fitting_room_outfits" not in st.session_state:
-                with st.spinner("Loading style options..."):
-                    st.session_state.fitting_room_outfits = get_outfit_images(style_search_terms[style], per_page=8)
-    
-            # Button to refresh outfits
-            if st.button("🔄 Refresh Outfits"):
-                # Show Lottie animation while fetching
-                with st.spinner("Fetching new styles..."):
-                    anim = load_lottie_url("https://assets4.lottiefiles.com/packages/lf20_puciaact.json")
-                    if anim:
-                        st_lottie(anim, height=200, speed=1.2, loop=True)
+        # Display outfits in coverflow
+        outfit_urls = [img["urls"]["regular"] for img in st.session_state.get("fitting_room_outfits", [])]
+        if outfit_urls:
+            st.markdown("### 🖼️ Browse Style Looks")
+            render_coverflow(outfit_urls)
 
-                    # Optional: Delay just to show animation before refresh
-                    time.sleep(2)
-            
-                    # Force refresh outfits
-                    st.session_state.outfit_refresh_key = random.randint(1, 10000)
-                    st.rerun()
+            # Simulated selection
+            selected_index = st.slider("Select an outfit to save:", 0, len(outfit_urls)-1, 0, key="carousel_selector")
+            st.image(outfit_urls[selected_index], caption="✨ Selected Look", use_column_width=True)
 
-            if st.session_state.fitting_room_outfits:
-                st.markdown("### 👚 Browse Outfit Options:")
-            
-                # Get list of image URLs
-                outfit_urls = [o["urls"]["regular"] for o in st.session_state.fitting_room_outfits]
-                
-                # Render horizontal scrollable coverflow
-                render_coverflow(outfit_urls)
-            
-                # JavaScript: Get current center index (frontmost image)
-                components.html("""
-                    <script>
-                    const slider = window.parent.document.querySelector('.slider');
-                    if (slider) {
-                        slider.addEventListener('scroll', () => {
-                            const slideWidth = 220;
-                            const index = Math.round(slider.scrollLeft / slideWidth);
-                            window.parent.postMessage({ type: "CENTER_INDEX", index: index }, "*");
-                        });
-                    }
-                    </script>
-                """, height=0)
-            
-                # Receive the index from JS — fallback to 0
-                selected_index = st.session_state.get("coverflow_index", 0)
-            
-                # Manual override (simulate update from JS since we can't truly sync it in time)
-                selected_index = st.slider("Browse outfits", 0, len(outfit_urls)-1, selected_index, key="coverflow_slider")
-            
-                if st.button("✅ Select This Outfit"):
-                    st.session_state.selected_outfit_url = outfit_urls[selected_index]
-                    st.success(f"Selected outfit #{selected_index+1}")
-                    st.rerun()
-
-            else:
-                st.warning("No outfit images found.")
+            if st.button("✅ Save This Look"):
+                st.success(f"Saved outfit #{selected_index+1} for later.")
+        else:
+            st.warning("No outfits found. Try refreshing.")
 
         if st.button("🔙 Back to Fashion Tab"):
             st.session_state.active_tab = TAB_FASHION
