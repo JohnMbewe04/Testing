@@ -1,23 +1,12 @@
 import streamlit as st
 import requests
-import urllib.parse
-import base64
-from urllib.parse import parse_qs
-import streamlit.components.v1 as components
 import random
 from streamlit_lottie import st_lottie
 import json
 import time
 import streamlit_js_eval
-import streamlit.components.v1 as components
 from PIL import Image
 from io import BytesIO
-from rembg import remove
-import numpy as np
-import cv2
-import io
-from transformers import SegformerForSemanticSegmentation, SegformerFeatureExtractor
-import torch
 
 # -------------------------------------------------------------------
 # Secrets & API Keys
