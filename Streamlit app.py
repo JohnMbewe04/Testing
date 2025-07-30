@@ -9,6 +9,7 @@ from streamlit_lottie import st_lottie
 import json
 import time
 import streamlit_js_eval
+import streamlit.components.v1 as components
 
 # -------------------------------------------------------------------
 # Secrets & API Keys
@@ -848,7 +849,6 @@ else:
                 render_coverflow(outfit_urls)
             
                 # JavaScript: Get current center index (frontmost image)
-                import streamlit.components.v1 as components
                 components.html("""
                     <script>
                     const slider = window.parent.document.querySelector('.slider');
