@@ -790,8 +790,8 @@ else:
             render_coverflow(outfit_urls)
 
             # Get the selected image URL
-            selected_url = streamlit_js_eval("localStorage.getItem('selectedOutfit')", key="selected_outfit")
-            
+            selected_url = streamlit_js_eval("localStorage.getItem('selectedOutfit')", key="selected_outfit", label="get_selected_outfit")
+
             # Display the selected outfit
             if selected_url:
                 st.markdown("### ✨ Selected Outfit")
@@ -802,7 +802,7 @@ else:
                     st.success("Outfit saved!")
             
                 if st.button("❌ Clear Selection"):
-                    streamlit_js_eval("localStorage.removeItem('selectedOutfit')", key="clear_selection")
+                    streamlit_js_eval("localStorage.removeItem('selectedOutfit')", key="clear_selection", label="clear_selected_outfit")
                     st.session_state.selected_outfit_url = None
                     st.rerun()
             else:
