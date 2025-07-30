@@ -163,21 +163,71 @@ def render_coverflow(images):
 
     html_code = f"""
     <style>
-    .coverflow-wrapper {{ display: flex; align-items: center; justify-content: center; }}
-    .arrow {{ font-size: 2rem; cursor: pointer; margin: 0 10px; }}
-    .slider-container {{ overflow: hidden; }}
-    .slider {{ display: flex; gap: 16px; overflow-x: auto; scroll-behavior: smooth; padding: 10px; }}
-    .slider::-webkit-scrollbar {{ display: none; }}
-    .slide {{ flex: 0 0 auto; width: 180px; height: 240px; cursor: pointer; }}
-    .slide img {{ width: 100%; height: 100%; object-fit: cover; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }}
+        .slider-container {{
+            position: relative;
+            width: 100%;
+            overflow: hidden;
+            padding: 10px 0;
+        }}
+        .slider {{
+            display: flex;
+            gap: 16px;
+            transition: transform 0.3s ease;
+            padding: 10px;
+            scroll-behavior: smooth;
+            overflow-x: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }}
+        .slider::-webkit-scrollbar {{
+            display: none;
+        }}
+        .slide {{
+            flex: 0 0 auto;
+            width: 200px;
+            height: 300px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.25);
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }}
+        .slide img {{
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }}
+        .slide:hover {{
+            transform: scale(1.05);
+        }}
+        .arrow {{
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 32px;
+            color: #333;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 50%;
+            padding: 4px 12px;
+            cursor: pointer;
+            z-index: 10;
+        }}
+        .arrow.left {{
+            left: 10px;
+        }}
+        .arrow.right {{
+            right: 10px;
+        }}
     </style>
-    <div class="coverflow-wrapper">
-        <div class="arrow" onclick="document.getElementById('slider').scrollBy({left:-200, behavior:'smooth'})">&#10094;</div>
-        <div class="slider-container">
-            <div class="slider" id="slider">{image_html}</div>
+    
+    <div class="slider-container">
+        <div class="arrow left" onclick="document.getElementById('slider').scrollBy({{left: -220, behavior: 'smooth'}})">&#10094;</div>
+        <div class="slider" id="slider">
+            {image_html}
         </div>
-        <div class="arrow" onclick="document.getElementById('slider').scrollBy({left:200, behavior:'smooth'})">&#10095;</div>
+        <div class="arrow right" onclick="document.getElementById('slider').scrollBy({{left: 220, behavior: 'smooth'}})">&#10095;</div>
     </div>
+
     <script>
     function selectImage(url) {{
         const message = {{ type: 'SELECT_OUTFIT', url }};
@@ -185,7 +235,8 @@ def render_coverflow(images):
     }}
     </script>
     """
-    components.html(html_code, height=300, scrolling=False)
+
+    components.html(html_code, height=360, scrolling=False)
     
 # -------------------------------------------------------------------
 # Helpers
