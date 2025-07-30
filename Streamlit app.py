@@ -14,8 +14,8 @@ from PIL import Image
 from io import BytesIO
 from rembg import remove
 import numpy as np
-import mediapipe as mp
 import cv2
+import io
 
 # -------------------------------------------------------------------
 # Secrets & API Keys
@@ -139,71 +139,32 @@ tag_to_style = {
 # Include: genre_to_tags, music_to_tags, tag_to_style, style_to_brands
 # [Insert same dictionaries from your previous code here]
 
+def mock_try_on_cleaned(user_image, outfit_image):
+    try:
+        # Remove backgrounds
+        user_no_bg = Image.open(io.BytesIO(remove(user_image.getvalue()))).convert("RGBA")
+        outfit_no_bg = Image.open(io.BytesIO(remove(requests.get(outfit_image).content))).convert("RGBA")
 
+        # Resize outfit relative to user image
+        user_width, user_height = user_no_bg.size
+        outfit_width = int(user_width * 0.6)
+        outfit_height = int(outfit_width * outfit_no_bg.height / outfit_no_bg.width)
+        outfit_resized = outfit_no_bg.resize((outfit_width, outfit_height))
 
-def try_on_mockup(user_image, outfit_image):
-    # Convert PIL image to OpenCV format
-    user_np = np.array(user_image.convert("RGB"))
-    user_cv = cv2.cvtColor(user_np, cv2.COLOR_RGB2BGR)
+        # Create a white background
+        background = Image.new("RGBA", user_no_bg.size, (255, 255, 255, 255))
+        background.paste(user_no_bg, (0, 0), user_no_bg)
 
-    # ---------------------------
-    # Step 1: Remove background using segmentation
-    # ---------------------------
-    mp_selfie_segmentation = mp.solutions.selfie_segmentation
-    with mp_selfie_segmentation.SelfieSegmentation(model_selection=1) as segment:
-        results = segment.process(cv2.cvtColor(user_cv, cv2.COLOR_BGR2RGB))
-        mask = results.segmentation_mask > 0.5
-        white_bg = np.ones_like(user_cv, dtype=np.uint8) * 255
-        user_seg = np.where(mask[..., None], user_cv, white_bg)
+        # Place outfit roughly centered on the user chest
+        x_pos = int((user_width - outfit_width) / 2)
+        y_pos = int(user_height * 0.35)
+        background.paste(outfit_resized, (x_pos, y_pos), outfit_resized)
 
-    # Convert to PIL with white background
-    user_clean = Image.fromarray(cv2.cvtColor(user_seg, cv2.COLOR_BGR2RGB)).convert("RGBA")
+        return background.convert("RGB")  # Final image without alpha
 
-    # ---------------------------
-    # Step 2: Detect pose for overlay position
-    # ---------------------------
-    mp_pose = mp.solutions.pose
-    pose = mp_pose.Pose(static_image_mode=True)
-    pose_results = pose.process(cv2.cvtColor(user_cv, cv2.COLOR_BGR2RGB))
-
-    if not pose_results.pose_landmarks:
-        st.error("Could not detect body pose. Please try a clearer photo.")
+    except Exception as e:
+        st.error(f"Mock try-on failed: {e}")
         return None
-
-    landmarks = pose_results.pose_landmarks.landmark
-    l_shoulder = landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER]
-    r_shoulder = landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER]
-    l_hip = landmarks[mp_pose.PoseLandmark.LEFT_HIP]
-    r_hip = landmarks[mp_pose.PoseLandmark.RIGHT_HIP]
-
-    w, h = user_image.size
-    x1 = int(min(l_shoulder.x, r_shoulder.x) * w)
-    x2 = int(max(l_shoulder.x, r_shoulder.x) * w)
-    y1 = int(min(l_shoulder.y, r_shoulder.y) * h)
-    y2 = int(max(l_hip.y, r_hip.y) * h)
-    torso_width = x2 - x1
-    torso_height = y2 - y1
-
-    # ---------------------------
-    # Step 3: Prepare the outfit image
-    # ---------------------------
-    outfit_np = np.array(outfit_image.convert("RGB"))
-    outfit_cv = cv2.cvtColor(outfit_np, cv2.COLOR_RGB2BGR)
-
-    # Add white background (in case outfit has transparency or cluttered background)
-    outfit_white_bg = np.ones_like(outfit_cv, dtype=np.uint8) * 255
-    outfit_clean = Image.fromarray(cv2.cvtColor(outfit_white_bg, cv2.COLOR_BGR2RGB)).convert("RGBA")
-
-    # Resize outfit and convert
-    outfit_resized = outfit_image.resize((torso_width, torso_height)).convert("RGBA")
-
-    # ---------------------------
-    # Step 4: Paste onto torso
-    # ---------------------------
-    user_result = user_clean.copy()
-    user_result.paste(outfit_resized, (x1, y1), outfit_resized)
-
-    return user_result
 
 @st.cache_data(ttl=600)
 def upload_to_imgbb(image_file):
@@ -848,12 +809,11 @@ else:
             st.image(selected_outfit_url, width=200)
 
         if selfie and selected_outfit_url:
-            if st.button("👕 Try On (Mock Preview)"):
+            if st.button("👕 Try it on (Mock)!"):
                 with st.spinner("Preparing your mock try-on..."):
-                    result = create_overlay_tryon(selfie, selected_outfit_url)
-                if result:
-                    st.image(result, caption="✨ Your Mock Try-On", use_column_width=True)
-            
+                    output_img = mock_try_on_cleaned(selfie, selected_outfit_url)
+                if output_img:
+                    st.image(output_img, caption="✨ Your Virtual Mock Try-On", use_column_width=True)
         if selfie:
             st.image(selfie, caption="You", width=200)
     
