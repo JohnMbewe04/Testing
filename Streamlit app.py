@@ -10,7 +10,7 @@ import json
 import time
 import streamlit_js_eval
 import streamlit.components.v1 as components
-from PIL import Image, ImageResampling
+from PIL import Image
 from io import BytesIO
 
 # -------------------------------------------------------------------
@@ -146,7 +146,7 @@ def create_overlay_tryon(selfie_file, outfit_url):
         outfit_img = Image.open(BytesIO(response.content)).convert("RGBA")
 
         # Resize outfit to match width of selfie
-        outfit_img = outfit_img.resize(selfie_img.size, ImageResampling.LANCZOS)
+        outfit_img = outfit_img.resize(selfie_img.size, Image.LANCZOS)
         
         # Reduce outfit transparency (adjust alpha as needed)
         outfit_img.putalpha(128)
