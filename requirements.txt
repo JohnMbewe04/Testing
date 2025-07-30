@@ -2,3 +2,5 @@ streamlit-lottie
 streamlit-js-eval
 replicate
 rembg
+onnxruntime
+onnx
