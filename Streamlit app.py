@@ -517,13 +517,7 @@ for key, default in [
     if key not in st.session_state:
         st.session_state[key] = default
 
-# 🛠 Tab Navigation (Make sure this sets from session state)
-tabs = [TAB_MEDIA, TAB_FASHION, TAB_FIT]
-selected_tab = st.radio("Go to:", tabs,
-    index=tabs.index(st.session_state.active_tab),
-    horizontal=True,
-    key="tab_selector"
-)
+
 # ✅ Only update session_state if the user clicks a different tab
 if selected_tab != st.session_state.active_tab:
     st.session_state.active_tab = selected_tab
@@ -550,6 +544,13 @@ st.caption("Discover your aesthetic twin in media and fashion.")
 
 st.write("---")
 
+# 🛠 Tab Navigation (Make sure this sets from session state)
+tabs = [TAB_MEDIA, TAB_FASHION, TAB_FIT]
+selected_tab = st.radio("Go to:", tabs,
+    index=tabs.index(st.session_state.active_tab),
+    horizontal=True,
+    key="tab_selector"
+)
 # -------------------------------------------------------------------
 # Media Style Match + Music Recommendations
 # -------------------------------------------------------------------
