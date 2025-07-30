@@ -131,6 +131,53 @@ tag_to_style = {
 # Include: genre_to_tags, music_to_tags, tag_to_style, style_to_brands
 # [Insert same dictionaries from your previous code here]
 
+def try_on_idm_vton(person_image_url, cloth_image_url):
+    replicate_url = "https://api.replicate.com/v1/predictions"
+    headers = {
+        "Authorization": f"Token {st.secrets['replicate']['api_token']}",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "version": "cb2c902b9cb7fa0dc36fe66e2a29a6c47bb30ed41ed48f4385b17b2fa4fcf9f3",
+        "input": {
+            "image": person_image_url,
+            "cloth": cloth_image_url
+        }
+    }
+
+    response = requests.post(replicate_url, headers=headers, json=payload).json()
+    status_url = response["urls"]["get"]
+
+    import time
+    while response["status"] not in ["succeeded", "failed"]:
+        time.sleep(2)
+        response = requests.get(status_url, headers=headers).json()
+
+    if response["status"] == "succeeded":
+        return response["output"]
+    else:
+        st.error("Try-on failed.")
+        return None
+
+@st.cache_data(ttl=600)
+def upload_to_imgbb(image_file):
+    api_key = st.secrets["imgbb"]["imgbb_api_key"]
+    url = "https://api.imgbb.com/1/upload"
+
+    # Read and encode image
+    image_bytes = image_file.read()
+    b64_encoded = base64.b64encode(image_bytes).decode("utf-8")
+
+    payload = {
+        "key": api_key,
+        "image": b64_encoded
+    }
+
+    response = requests.post(url, data=payload)
+    data = response.json()
+    return data["data"]["url"] if data.get("data") else None
+
 @st.cache_data
 def load_lottie_url(url):
     r = requests.get(url)
@@ -764,6 +811,7 @@ elif st.session_state.active_tab == TAB_FASHION:
 
                 if st.button(f"Try {style}", key=f"try_{style}"):
                     st.session_state.selected_style = style
+                    st.session_state.selected_outfit_url = None  # User will pick this in fitting room
                     st.session_state.active_tab = TAB_FIT
                     st.rerun()
 
@@ -784,6 +832,24 @@ else:
         st.success(f"Fitting Room – {style.title()} Look")
     
         selfie = st.camera_input("📸 Take a selfie") or st.file_uploader("…or upload an image")
+        selected_outfit_url = st.session_state.get("selected_outfit_url")  # store this when user clicks an outfit
+
+        if selected_outfit_url:
+            st.markdown("### 🧥 Selected Outfit")
+            st.image(selected_outfit_url, width=200)
+
+        if selfie and selected_outfit_url:
+            if st.button("Try it on!"):
+                with st.spinner("Uploading images..."):
+                    person_url = upload_to_imgbb(selfie)
+                    cloth_url = selected_outfit_url  # already a URL
+        
+                with st.spinner("Generating your try-on look..."):
+                    output = try_on_idm_vton(person_url, cloth_url)
+        
+                if output:
+                    st.image(output, caption="✨ Your Virtual Try-On", use_column_width=True)
+            
         if selfie:
             st.image(selfie, caption="You", width=200)
     
@@ -808,8 +874,14 @@ else:
                     st.rerun()
 
             if st.session_state.fitting_room_outfits:
-                image_urls = [o["urls"]["regular"] for o in st.session_state.fitting_room_outfits if "urls" in o]
-                render_coverflow(image_urls)
+                st.markdown("### 👚 Click an outfit to try it on:")
+                cols = st.columns(2)
+                for i, outfit in enumerate(st.session_state.fitting_room_outfits):
+                    with cols[i % 2]:
+                        st.image(outfit["urls"]["small"], use_column_width=True)
+                        if st.button(f"👕 Try This One #{i+1}", key=f"try_outfit_{i}"):
+                            st.session_state.selected_outfit_url = outfit["urls"]["regular"]
+                            st.rerun()
             else:
                 st.warning("No outfit images found.")
 
