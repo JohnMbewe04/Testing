@@ -10,7 +10,6 @@ from io import BytesIO
 import numpy as np
 import streamlit.components.v1 as components
 from streamlit_lottie import st_lottie
-from streamlit_js_eval import get_js_value
 from streamlit.components.v1 import html
 
 # -------------------------------------------------------------------
@@ -766,7 +765,7 @@ elif st.session_state.active_tab == TAB_FASHION:
 # -------------------------------------------------------------------
 # AI Fitting Room
 # -------------------------------------------------------------------
-else:
+elif st.session_state.active_tab == TAB_FIT:
     st.header("🧍 Virtual Style Preview")
     style = st.session_state.selected_style
 
@@ -786,38 +785,24 @@ else:
         outfit_urls = [img["urls"]["regular"] for img in st.session_state.get("fitting_room_outfits", [])]
 
         if outfit_urls:
-            st.markdown("### 🖼️ Click to Select Your Look")
-            render_coverflow(outfit_urls)
+            st.markdown("### 🖼️ Choose Your Look Below")
 
-            # Get the selected image URL
-            selected_url = None
-            if outfit_urls:
-                with st.container():
-                    selected_url = get_js_value(
-                        "localStorage.getItem('selectedOutfit')",
-                        key="selected_outfit",
-                        label="get_selected_outfit"
-                    )
+            selected_index = st.radio(
+                "Pick an outfit:",
+                index=0,
+                options=list(range(len(outfit_urls))),
+                format_func=lambda i: f"Look {i + 1}"
+            )
 
-            # Display the selected outfit
-            if selected_url:
-                st.markdown("### ✨ Selected Outfit")
-                st.image(selected_url, width=220, caption="Your Pick")
-                st.session_state.selected_outfit_url = selected_url
-            
-                if st.button("✅ Save This Look"):
-                    st.success("Outfit saved!")
-            
-                if st.button("❌ Clear Selection"):
-                    get_js_value(
-                        "localStorage.removeItem('selectedOutfit')",
-                        key="clear_selection",
-                        label="clear_outfit"
-                    )
-                    st.session_state.selected_outfit_url = None
-                    st.rerun()
-            else:
-                st.info("Click an outfit above to preview it.")
+            selected_url = outfit_urls[selected_index]
+            st.image(selected_url, width=250, caption="Your Selected Outfit")
+            st.session_state.selected_outfit_url = selected_url
+
+            if st.button("✅ Save This Look"):
+                st.success("Outfit saved!")
+
+        else:
+            st.info("No outfits found. Try refreshing.")
 
         if st.button("🔙 Back to Fashion Tab"):
             st.session_state.active_tab = TAB_FASHION
