@@ -16,6 +16,8 @@ from rembg import remove
 import numpy as np
 import cv2
 import io
+from transformers import SegformerForSemanticSegmentation, SegformerFeatureExtractor
+import torch
 
 # -------------------------------------------------------------------
 # Secrets & API Keys
@@ -138,6 +140,28 @@ tag_to_style = {
 # (other dictionaries omitted here to save space, same as previous version)
 # Include: genre_to_tags, music_to_tags, tag_to_style, style_to_brands
 # [Insert same dictionaries from your previous code here]
+def segment_garment(image_path):
+    extractor = SegformerFeatureExtractor.from_pretrained("nvidia/segformer-b3-finetuned-fashionpedia")
+    model = SegformerForSemanticSegmentation.from_pretrained("nvidia/segformer-b3-finetuned-fashionpedia")
+
+    image = Image.open(image_path).convert("RGB")
+    inputs = extractor(images=image, return_tensors="pt")
+    with torch.no_grad():
+        outputs = model(**inputs)
+        logits = outputs.logits  # (batch_size, num_classes, height, width)
+        segmentation = torch.argmax(logits, dim=1)[0].numpy()
+
+    # Create mask for the target class — say, "coat" (label 4), "dress" (label 6), etc.
+    garment_mask = (segmentation == 4).astype(np.uint8) * 255
+    return Image.fromarray(garment_mask)
+
+def crop_from_mask(original_image, mask_image):
+    mask = np.array(mask_image)
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    largest = max(contours, key=cv2.contourArea)
+    x, y, w, h = cv2.boundingRect(largest)
+    return original_image.crop((x, y, x + w, y + h))
+
 def get_binary_mask(image_bytes):
     image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
     img_np = np.array(image)
