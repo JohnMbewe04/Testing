@@ -10,7 +10,7 @@ from io import BytesIO
 import numpy as np
 import streamlit.components.v1 as components
 from streamlit_lottie import st_lottie
-
+from streamlit_js_eval import streamlit_js_eval
 
 # -------------------------------------------------------------------
 # Secrets & API Keys
@@ -159,82 +159,34 @@ def load_lottie_url(url):
     return r.json()
 
 def render_coverflow(images):
-    image_html = ''.join(f'<div class="slide"><img src="{url}"></div>' for url in images)
-
-    js_code = f"""
-    <script>
-    const slider = document.getElementById('slider');
-    let currentIndex = 0;
-
-    function updateIndex() {{
-        const scrollLeft = slider.scrollLeft;
-        const slideWidth = 220;  // 200px + 20px gap
-        currentIndex = Math.round(scrollLeft / slideWidth);
-        window.parent.postMessage({{ type: "INDEX_UPDATE", index: currentIndex }}, "*");
-    }}
-
-    slider.addEventListener('scroll', () => {{
-        clearTimeout(window.scrollTimeout);
-        window.scrollTimeout = setTimeout(updateIndex, 150);
-    }});
-
-    window.onload = updateIndex;
-    </script>
-    """
+    image_html = ''.join(f"<div class='slide'><img src='{url}' onclick=\"selectImage('{url}')\"></div>" for url in images)
 
     html_code = f"""
     <style>
-    .slider-container {{
-        position: relative;
-        width: 100%;
-        overflow: hidden;
-        padding: 10px 0;
-    }}
-    .slider {{
-        display: flex;
-        gap: 16px;
-        transition: transform 0.3s ease;
-        padding: 10px;
-        scroll-behavior: smooth;
-        overflow-x: auto;
-        scrollbar-width: none;
-        -ms-overflow-style: none;
-    }}
-    .slider::-webkit-scrollbar {{
-        display: none;
-    }}
-    .slide {{
-        flex: 0 0 auto;
-        width: 200px;
-        height: 300px;
-        border-radius: 12px;
-        overflow: hidden;
-        box-shadow: 0 6px 12px rgba(0,0,0,0.25);
-        cursor: pointer;
-        transition: transform 0.2s ease;
-    }}
-    .slide img {{
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }}
-    .slide:hover {{
-        transform: scale(1.05);
-    }}
+    .coverflow-wrapper {{ display: flex; align-items: center; justify-content: center; }}
+    .arrow {{ font-size: 2rem; cursor: pointer; margin: 0 10px; }}
+    .slider-container {{ overflow: hidden; }}
+    .slider {{ display: flex; gap: 16px; overflow-x: auto; scroll-behavior: smooth; padding: 10px; }}
+    .slider::-webkit-scrollbar {{ display: none; }}
+    .slide {{ flex: 0 0 auto; width: 180px; height: 240px; cursor: pointer; }}
+    .slide img {{ width: 100%; height: 100%; object-fit: cover; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }}
     </style>
-
-    <div class="slider-container">
-        <div class="slider" id="slider">
-            {image_html}
+    <div class="coverflow-wrapper">
+        <div class="arrow" onclick="document.getElementById('slider').scrollBy({left:-200, behavior:'smooth'})">&#10094;</div>
+        <div class="slider-container">
+            <div class="slider" id="slider">{image_html}</div>
         </div>
+        <div class="arrow" onclick="document.getElementById('slider').scrollBy({left:200, behavior:'smooth'})">&#10095;</div>
     </div>
-    {js_code}
+    <script>
+    function selectImage(url) {{
+        const message = {{ type: 'SELECT_OUTFIT', url }};
+        window.parent.postMessage(message, '*');
+    }}
+    </script>
     """
-
-    components.html(html_code, height=350, scrolling=False)
-
-
-
+    components.html(html_code, height=300, scrolling=False)
+    
 # -------------------------------------------------------------------
 # Helpers
 # -------------------------------------------------------------------
@@ -768,7 +720,6 @@ else:
     else:
         st.success(f"Previewing: {style.title()} Style")
 
-        # Fetch or reuse outfits
         if "fitting_room_outfits" not in st.session_state or st.button("🔄 Refresh Looks"):
             with st.spinner("Loading style options..."):
                 anim = load_lottie_url("https://assets4.lottiefiles.com/packages/lf20_puciaact.json")
@@ -777,18 +728,24 @@ else:
                 time.sleep(1)
                 st.session_state.fitting_room_outfits = get_outfit_images(style_search_terms[style], per_page=10)
 
-        # Display outfits in coverflow
         outfit_urls = [img["urls"]["regular"] for img in st.session_state.get("fitting_room_outfits", [])]
+
         if outfit_urls:
-            st.markdown("### 🖼️ Browse Style Looks")
+            st.markdown("### 🖼️ Click to Select Your Look")
             render_coverflow(outfit_urls)
 
-            # Simulated selection
-            selected_index = st.slider("Select an outfit to save:", 0, len(outfit_urls)-1, 0, key="carousel_selector")
-            st.image(outfit_urls[selected_index], caption="✨ Selected Look", use_column_width=True)
+            selected_url = streamlit_js_eval.get_js_value(
+                "window.addEventListener('message', (event) => { if (event.data.type === 'SELECT_OUTFIT') { window.selectedOutfit = event.data.url; } }); window.selectedOutfit;",
+                key="select_outfit_js"
+            )
 
-            if st.button("✅ Save This Look"):
-                st.success(f"Saved outfit #{selected_index+1} for later.")
+            if selected_url:
+                st.session_state.selected_outfit_url = selected_url
+
+            if st.session_state.get("selected_outfit_url"):
+                st.image(st.session_state.selected_outfit_url, width=280, caption="✨ Selected Look")
+                if st.button("✅ Save This Look"):
+                    st.success("Saved this outfit for later.")
         else:
             st.warning("No outfits found. Try refreshing.")
 
