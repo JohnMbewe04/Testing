@@ -1,12 +1,17 @@
 import streamlit as st
 import requests
-import random
-from streamlit_lottie import st_lottie
+import urllib.parse
+import base64
 import json
 import time
-import streamlit_js_eval
+import random
 from PIL import Image
 from io import BytesIO
+from rembg import remove
+import numpy as np
+import streamlit.components.v1 as components
+from streamlit_lottie import st_lottie
+
 
 # -------------------------------------------------------------------
 # Secrets & API Keys
@@ -129,91 +134,6 @@ tag_to_style = {
 # (other dictionaries omitted here to save space, same as previous version)
 # Include: genre_to_tags, music_to_tags, tag_to_style, style_to_brands
 # [Insert same dictionaries from your previous code here]
-def segment_garment(image_path):
-    extractor = SegformerFeatureExtractor.from_pretrained("nvidia/segformer-b3-finetuned-fashionpedia")
-    model = SegformerForSemanticSegmentation.from_pretrained("nvidia/segformer-b3-finetuned-fashionpedia")
-
-    image = Image.open(image_path).convert("RGB")
-    inputs = extractor(images=image, return_tensors="pt")
-    with torch.no_grad():
-        outputs = model(**inputs)
-        logits = outputs.logits  # (batch_size, num_classes, height, width)
-        segmentation = torch.argmax(logits, dim=1)[0].numpy()
-
-    # Create mask for the target class — say, "coat" (label 4), "dress" (label 6), etc.
-    garment_mask = (segmentation == 4).astype(np.uint8) * 255
-    return Image.fromarray(garment_mask)
-
-def crop_from_mask(original_image, mask_image):
-    mask = np.array(mask_image)
-    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    largest = max(contours, key=cv2.contourArea)
-    x, y, w, h = cv2.boundingRect(largest)
-    return original_image.crop((x, y, x + w, y + h))
-
-def get_binary_mask(image_bytes):
-    image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
-    img_np = np.array(image)
-    gray = cv2.cvtColor(img_np, cv2.COLOR_RGB2GRAY)
-    _, thresh = cv2.threshold(gray, 10, 255, cv2.THRESH_BINARY)
-    return thresh
-
-def get_clothing_crop(image_bytes):
-    mask = get_binary_mask(image_bytes)
-    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-    # Try to find a more garment-like contour
-    clothing_contours = []
-    for c in contours:
-        x, y, w, h = cv2.boundingRect(c)
-        aspect = h / w
-        if 0.5 < aspect < 2.5 and w > 100 and h > 100:
-            clothing_contours.append((c, cv2.contourArea(c)))
-
-    if clothing_contours:
-        clothing_contours.sort(key=lambda x: x[1], reverse=True)
-        best_c, _ = clothing_contours[0]
-        x, y, w, h = cv2.boundingRect(best_c)
-    else:
-        # Fallback to largest
-        x, y, w, h = cv2.boundingRect(max(contours, key=cv2.contourArea))
-
-    img = Image.open(io.BytesIO(image_bytes))
-    return img.crop((x, y, x + w, y + h))
-
-def mock_try_on_cleaned(user_image, outfit_url):
-    try:
-        # Step 1: Load and remove background
-        user_image_bytes = user_image.read() if hasattr(user_image, "read") else user_image.getvalue()
-        user_no_bg_bytes = remove(user_image_bytes)
-        user_no_bg = Image.open(io.BytesIO(user_no_bg_bytes)).convert("RGBA")
-
-        # Step 2: Get outfit image and crop
-        outfit_bytes = requests.get(outfit_url).content
-        outfit_crop = get_clothing_crop(outfit_bytes).convert("RGBA")
-
-        # Step 3: Resize outfit to fit user image width
-        user_width, user_height = user_no_bg.size
-        outfit_width = int(user_width * 0.6)
-        outfit_height = int(outfit_width * outfit_crop.height / outfit_crop.width)
-        outfit_resized = outfit_crop.resize((outfit_width, outfit_height))
-
-        # Step 4: Create background canvas and paste selfie
-        background = Image.new("RGBA", user_no_bg.size, (255, 255, 255, 255))
-        background.paste(user_no_bg, (0, 0), user_no_bg)
-
-        # Step 5: Overlay outfit
-        x_pos = int((user_width - outfit_width) / 2)
-        y_pos = int(user_height * 0.4)  # Adjust for better alignment
-        background.paste(outfit_resized, (x_pos, y_pos), outfit_resized)
-
-        return background.convert("RGB")
-
-    except Exception as e:
-        st.error(f"Mock try-on failed: {e}")
-        return None
-
-
 @st.cache_data(ttl=600)
 def upload_to_imgbb(image_file):
     api_key = st.secrets["imgbb"]["imgbb_api_key"]
