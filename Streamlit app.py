@@ -7,7 +7,6 @@ import time
 import random
 from PIL import Image
 from io import BytesIO
-from rembg import remove
 import numpy as np
 import streamlit.components.v1 as components
 from streamlit_lottie import st_lottie
