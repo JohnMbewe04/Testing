@@ -8,6 +8,7 @@ import random
 from streamlit_lottie import st_lottie
 import json
 import time
+import streamlit_js_eval
 
 # -------------------------------------------------------------------
 # Secrets & API Keys
@@ -188,6 +189,27 @@ def load_lottie_url(url):
 def render_coverflow(images):
     image_html = ''.join(f'<div class="slide"><img src="{url}"></div>' for url in images)
 
+    js_code = f"""
+    <script>
+    const slider = document.getElementById('slider');
+    let currentIndex = 0;
+
+    function updateIndex() {{
+        const scrollLeft = slider.scrollLeft;
+        const slideWidth = 220;  // 200px + 20px gap
+        currentIndex = Math.round(scrollLeft / slideWidth);
+        window.parent.postMessage({{ type: "INDEX_UPDATE", index: currentIndex }}, "*");
+    }}
+
+    slider.addEventListener('scroll', () => {{
+        clearTimeout(window.scrollTimeout);
+        window.scrollTimeout = setTimeout(updateIndex, 150);
+    }});
+
+    window.onload = updateIndex;
+    </script>
+    """
+
     html_code = f"""
     <style>
     .slider-container {{
@@ -227,75 +249,18 @@ def render_coverflow(images):
     .slide:hover {{
         transform: scale(1.05);
     }}
-    .arrow {{
-        position: absolute;
-        top: 50%;
-        transform: translateY(-50%);
-        font-size: 2rem;
-        background-color: rgba(255,255,255,0.8);
-        border: none;
-        padding: 8px;
-        border-radius: 50%;
-        cursor: pointer;
-        z-index: 10;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    }}
-    .arrow:hover {{
-        background-color: rgba(255,255,255,1);
-    }}
-    #leftArrow {{ left: 10px; }}
-    #rightArrow {{ right: 10px; }}
     </style>
 
     <div class="slider-container">
-        <button class="arrow" id="leftArrow">&#10094;</button>
         <div class="slider" id="slider">
             {image_html}
         </div>
-        <button class="arrow" id="rightArrow">&#10095;</button>
     </div>
-
-    <script>
-    const slider = document.getElementById('slider');
-    const leftArrow = document.getElementById('leftArrow');
-    const rightArrow = document.getElementById('rightArrow');
-
-    leftArrow.addEventListener('click', () => {{
-        slider.scrollBy({{ left: -220, behavior: 'smooth' }});
-    }});
-    rightArrow.addEventListener('click', () => {{
-        slider.scrollBy({{ left: 220, behavior: 'smooth' }});
-    }});
-
-    let isDown = false;
-    let startX;
-    let scrollLeft;
-
-    slider.addEventListener('mousedown', (e) => {{
-        isDown = true;
-        startX = e.pageX - slider.offsetLeft;
-        scrollLeft = slider.scrollLeft;
-    }});
-
-    slider.addEventListener('mouseleave', () => {{
-        isDown = false;
-    }});
-
-    slider.addEventListener('mouseup', () => {{
-        isDown = false;
-    }});
-
-    slider.addEventListener('mousemove', (e) => {{
-        if (!isDown) return;
-        e.preventDefault();
-        const x = e.pageX - slider.offsetLeft;
-        const walk = (x - startX) * 2;
-        slider.scrollLeft = scrollLeft - walk;
-    }});
-    </script>
+    {js_code}
     """
 
-    components.html(html_code, height=380, scrolling=False)
+    components.html(html_code, height=350, scrolling=False)
+
 
 
 # -------------------------------------------------------------------
@@ -874,14 +839,40 @@ else:
                     st.rerun()
 
             if st.session_state.fitting_room_outfits:
-                st.markdown("### 👚 Click an outfit to try it on:")
-                cols = st.columns(2)
-                for i, outfit in enumerate(st.session_state.fitting_room_outfits):
-                    with cols[i % 2]:
-                        st.image(outfit["urls"]["small"], use_column_width=True)
-                        if st.button(f"👕 Try This One #{i+1}", key=f"try_outfit_{i}"):
-                            st.session_state.selected_outfit_url = outfit["urls"]["regular"]
-                            st.rerun()
+                st.markdown("### 👚 Browse Outfit Options:")
+            
+                # Get list of image URLs
+                outfit_urls = [o["urls"]["regular"] for o in st.session_state.fitting_room_outfits]
+                
+                # Render horizontal scrollable coverflow
+                render_coverflow(outfit_urls)
+            
+                # JavaScript: Get current center index (frontmost image)
+                import streamlit.components.v1 as components
+                components.html("""
+                    <script>
+                    const slider = window.parent.document.querySelector('.slider');
+                    if (slider) {
+                        slider.addEventListener('scroll', () => {
+                            const slideWidth = 220;
+                            const index = Math.round(slider.scrollLeft / slideWidth);
+                            window.parent.postMessage({ type: "CENTER_INDEX", index: index }, "*");
+                        });
+                    }
+                    </script>
+                """, height=0)
+            
+                # Receive the index from JS — fallback to 0
+                selected_index = st.session_state.get("coverflow_index", 0)
+            
+                # Manual override (simulate update from JS since we can't truly sync it in time)
+                selected_index = st.slider("Browse outfits", 0, len(outfit_urls)-1, selected_index, key="coverflow_slider")
+            
+                if st.button("✅ Select This Outfit"):
+                    st.session_state.selected_outfit_url = outfit_urls[selected_index]
+                    st.success(f"Selected outfit #{selected_index+1}")
+                    st.rerun()
+
             else:
                 st.warning("No outfit images found.")
 
