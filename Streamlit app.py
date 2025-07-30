@@ -790,7 +790,14 @@ else:
             render_coverflow(outfit_urls)
 
             # Get the selected image URL
-            selected_url = get_js_value("localStorage.getItem('selectedOutfit')", key="selected_outfit")
+            selected_url = None
+            if outfit_urls:
+                with st.container():
+                    selected_url = get_js_value(
+                        "localStorage.getItem('selectedOutfit')",
+                        key="selected_outfit",
+                        label="get_selected_outfit"
+                    )
 
             # Display the selected outfit
             if selected_url:
@@ -802,7 +809,11 @@ else:
                     st.success("Outfit saved!")
             
                 if st.button("❌ Clear Selection"):
-                    get_js_value("localStorage.removeItem('selectedOutfit')", key="clear_selection")
+                    get_js_value(
+                        "localStorage.removeItem('selectedOutfit')",
+                        key="clear_selection",
+                        label="clear_outfit"
+                    )
                     st.session_state.selected_outfit_url = None
                     st.rerun()
             else:
