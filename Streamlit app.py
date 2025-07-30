@@ -12,6 +12,8 @@ import streamlit_js_eval
 import streamlit.components.v1 as components
 from PIL import Image
 from io import BytesIO
+from rembg import remove
+import numpy as np
 
 # -------------------------------------------------------------------
 # Secrets & API Keys
@@ -138,23 +140,32 @@ tag_to_style = {
 # Function to blend selfie + outfit images
 def create_overlay_tryon(selfie_file, outfit_url):
     try:
-        # Load user's selfie
+        # Load and remove background from selfie
         selfie_img = Image.open(selfie_file).convert("RGBA")
+        selfie_np = np.array(selfie_img)
+        selfie_no_bg = remove(selfie_np)
+        selfie_clean = Image.fromarray(selfie_no_bg)
 
-        # Load outfit image from URL
+        # Load and remove background from outfit
         response = requests.get(outfit_url)
         outfit_img = Image.open(BytesIO(response.content)).convert("RGBA")
+        outfit_np = np.array(outfit_img)
+        outfit_no_bg = remove(outfit_np)
+        outfit_clean = Image.fromarray(outfit_no_bg)
 
-        # Resize outfit to match width of selfie
-        outfit_img = outfit_img.resize(selfie_img.size, Image.LANCZOS)
-        
-        # Reduce outfit transparency (adjust alpha as needed)
-        outfit_img.putalpha(128)
+        # Resize outfit to fit vertically (height alignment)
+        outfit_scaled = outfit_clean.resize((int(selfie_clean.width * 0.7), selfie_clean.height))
 
-        # Overlay outfit on selfie
-        combined = Image.alpha_composite(selfie_img, outfit_img)
+        # Center outfit on selfie horizontally
+        offset_x = (selfie_clean.width - outfit_scaled.width) // 2
+        offset_y = 0  # You can adjust this manually if needed
 
-        return combined
+        # Create white background canvas
+        base = Image.new("RGBA", selfie_clean.size, (255, 255, 255, 255))
+        base.paste(selfie_clean, (0, 0), mask=selfie_clean)
+        base.paste(outfit_scaled, (offset_x, offset_y), mask=outfit_scaled)
+
+        return base
 
     except Exception as e:
         st.error(f"Mock try-on failed: {str(e)}")
