@@ -10,6 +10,7 @@ import json
 import time
 import streamlit_js_eval
 import streamlit.components.v1 as components
+import replicate
 
 # -------------------------------------------------------------------
 # Secrets & API Keys
@@ -133,34 +134,37 @@ tag_to_style = {
 # Include: genre_to_tags, music_to_tags, tag_to_style, style_to_brands
 # [Insert same dictionaries from your previous code here]
 
-def try_on_idm_vton(person_image_url, cloth_image_url):
-    replicate_url = "https://api.replicate.com/v1/predictions"
-    headers = {
-        "Authorization": f"Token {st.secrets['replicate']['api_token']}",
-        "Content-Type": "application/json"
-    }
+def try_on_idm_vton(person_url, cloth_url):
+    replicate_client = replicate.Client(api_token=st.secrets["replicate"]["token"])
 
-    payload = {
-        "version": "cb2c902b9cb7fa0dc36fe66e2a29a6c47bb30ed41ed48f4385b17b2fa4fcf9f3",
-        "input": {
-            "image": person_image_url,
-            "cloth": cloth_image_url
+    try:
+        version = "cuuupid/idm-vton:4b9aa54cc43e9277a54b5f0c3d05b65ae7f372d25c1290cd57fa40f2c2314d1b"
+        input_data = {
+            "image": person_url,
+            "cloth": cloth_url,
+            "sleeve": "short",  # You can let user choose this later
+            "pose": "no",
+            "dilate_kernel": 15
         }
-    }
 
-    response = requests.post(replicate_url, headers=headers, json=payload).json()
-    status_url = response["urls"]["get"]
+        prediction = replicate_client.predictions.create(version=version, input=input_data)
+        status_url = prediction.urls.get("get")  # safer than response["urls"]["get"]
 
-    import time
-    while response["status"] not in ["succeeded", "failed"]:
-        time.sleep(2)
-        response = requests.get(status_url, headers=headers).json()
+        # Polling until prediction is done
+        while prediction.status not in ["succeeded", "failed"]:
+            time.sleep(2)
+            prediction.reload()
 
-    if response["status"] == "succeeded":
-        return response["output"]
-    else:
-        st.error("Try-on failed.")
+        if prediction.status == "succeeded":
+            return prediction.output
+        else:
+            st.error("Failed to generate try-on image.")
+            return None
+
+    except Exception as e:
+        st.error(f"An error occurred during virtual try-on: {str(e)}")
         return None
+
 
 @st.cache_data(ttl=600)
 def upload_to_imgbb(image_file):
