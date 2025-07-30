@@ -4,3 +4,5 @@ replicate
 rembg
 onnxruntime
 onnx
+mediapipe
+opencv-python
