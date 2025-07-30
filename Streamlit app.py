@@ -7,6 +7,7 @@ import streamlit.components.v1 as components
 import random
 from streamlit_lottie import st_lottie
 import json
+import time
 
 # -------------------------------------------------------------------
 # Secrets & API Keys
