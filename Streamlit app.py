@@ -11,6 +11,7 @@ import numpy as np
 import streamlit.components.v1 as components
 from streamlit_lottie import st_lottie
 from streamlit_js_eval import streamlit_js_eval
+from streamlit.components.v1 import html
 
 # -------------------------------------------------------------------
 # Secrets & API Keys
@@ -159,7 +160,10 @@ def load_lottie_url(url):
     return r.json()
 
 def render_coverflow(images):
-    image_html = ''.join(f"<div class='slide'><img src='{url}' onclick=\"selectImage('{url}')\"></div>" for url in images)
+    image_html = ''.join(
+        f"<div class='slide'><img src='{url}' onclick=\"selectImage('{url}')\"></div>"
+        for url in images
+    )
 
     html_code = f"""
     <style>
@@ -211,6 +215,7 @@ def render_coverflow(images):
             padding: 4px 12px;
             cursor: pointer;
             z-index: 10;
+            user-select: none;
         }}
         .arrow.left {{
             left: 10px;
@@ -219,7 +224,7 @@ def render_coverflow(images):
             right: 10px;
         }}
     </style>
-    
+
     <div class="slider-container">
         <div class="arrow left" onclick="document.getElementById('slider').scrollBy({{left: -220, behavior: 'smooth'}})">&#10094;</div>
         <div class="slider" id="slider">
@@ -230,13 +235,12 @@ def render_coverflow(images):
 
     <script>
     function selectImage(url) {{
-        const message = {{ type: 'SELECT_OUTFIT', url }};
-        window.parent.postMessage(message, '*');
+        localStorage.setItem("selectedOutfit", url);
     }}
     </script>
     """
 
-    components.html(html_code, height=360, scrolling=False)
+    html(html_code, height=350)
     
 # -------------------------------------------------------------------
 # Helpers
@@ -785,20 +789,24 @@ else:
             st.markdown("### 🖼️ Click to Select Your Look")
             render_coverflow(outfit_urls)
 
-            selected_url = streamlit_js_eval.get_js_value(
-                "window.addEventListener('message', (event) => { if (event.data.type === 'SELECT_OUTFIT') { window.selectedOutfit = event.data.url; } }); window.selectedOutfit;",
-                key="select_outfit_js"
-            )
-
+            # Get the selected image URL
+            selected_url = get_js_value("localStorage.getItem('selectedOutfit')", key="selected_outfit")
+            
+            # Display the selected outfit
             if selected_url:
+                st.markdown("### ✨ Selected Outfit")
+                st.image(selected_url, width=220, caption="Your Pick")
                 st.session_state.selected_outfit_url = selected_url
-
-            if st.session_state.get("selected_outfit_url"):
-                st.image(st.session_state.selected_outfit_url, width=280, caption="✨ Selected Look")
+            
                 if st.button("✅ Save This Look"):
-                    st.success("Saved this outfit for later.")
-        else:
-            st.warning("No outfits found. Try refreshing.")
+                    st.success("Outfit saved!")
+            
+                if st.button("❌ Clear Selection"):
+                    get_js_value("localStorage.removeItem('selectedOutfit')", key="clear_selection")
+                    st.session_state.selected_outfit_url = None
+                    st.rerun()
+            else:
+                st.info("Click an outfit above to preview it.")
 
         if st.button("🔙 Back to Fashion Tab"):
             st.session_state.active_tab = TAB_FASHION
