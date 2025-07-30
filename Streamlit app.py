@@ -10,7 +10,7 @@ from io import BytesIO
 import numpy as np
 import streamlit.components.v1 as components
 from streamlit_lottie import st_lottie
-from streamlit_js_eval import streamlit_js_eval
+from streamlit_js_eval import get_js_value
 from streamlit.components.v1 import html
 
 # -------------------------------------------------------------------
@@ -790,7 +790,7 @@ else:
             render_coverflow(outfit_urls)
 
             # Get the selected image URL
-            selected_url = streamlit_js_eval("localStorage.getItem('selectedOutfit')", key="selected_outfit", label="get_selected_outfit")
+            selected_url = get_js_value("localStorage.getItem('selectedOutfit')", key="selected_outfit")
 
             # Display the selected outfit
             if selected_url:
@@ -802,7 +802,7 @@ else:
                     st.success("Outfit saved!")
             
                 if st.button("❌ Clear Selection"):
-                    streamlit_js_eval("localStorage.removeItem('selectedOutfit')", key="clear_selection", label="clear_selected_outfit")
+                    get_js_value("localStorage.removeItem('selectedOutfit')", key="clear_selection")
                     st.session_state.selected_outfit_url = None
                     st.rerun()
             else:
