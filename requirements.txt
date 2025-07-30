@@ -1,5 +1,5 @@
 streamlit-lottie
-streamlit-js-eval
+git+https://github.com/marcskovmadsen/streamlit-js-eval.git
 replicate
 rembg
 onnxruntime
