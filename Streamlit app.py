@@ -242,13 +242,19 @@ def render_coverflow(images):
 # Helpers
 # -------------------------------------------------------------------
 def qloo_search_entity(name, entity_type="movie"):
+    ENTITY_URN_TYPES = {
+        "movie": "urn:entity:movie",
+        "music": "urn:entity:artist",
+        "genre": "urn:entity:genre"
+    }
+
     headers = {
         "X-API-Key": QLOO_API_KEY
     }
     url = "https://hackathon.api.qloo.com/search"
     params = {
         "query": name.strip().title(),
-        "types": f"urn:entity:{entity_type}"
+        "types": ENTITY_URN_TYPES.get(entity_type, "urn:entity:movie")
     }
 
     try:
