@@ -242,10 +242,10 @@ def render_coverflow(images):
 # Helpers
 # -------------------------------------------------------------------
 def get_qloo_related_styles(domain, name, limit=8):
-    url = f"https://api.qloo.com/v1/{domain}/related"
+    url = f"https://hackathon.api.qloo.com/v1/{domain}/related"
     headers = {
-        "Content-Type": "application/json",
-        "X-API-KEY": QLOO_API_KEY
+        "Authorization": f"Bearer {QLOO_API_KEY}",
+        "Content-Type": "application/json"
     }
     payload = {
         "name": name,
@@ -258,11 +258,12 @@ def get_qloo_related_styles(domain, name, limit=8):
             items = response.json().get("results", [])
             return [item["name"].lower() for item in items]
         else:
-            st.warning("Qloo API error: " + str(response.status_code))
+            st.warning(f"Qloo API error: {response.status_code} - {response.text}")
             return []
     except Exception as e:
         st.error(f"Failed to fetch Qloo styles: {e}")
         return []
+
 
 def get_archetypes_from_media(movie=None, genre=None, music=None):
     raw_tags = []
