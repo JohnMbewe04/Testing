@@ -932,7 +932,7 @@ else:
 
         if "fitting_room_outfits" not in st.session_state or st.button("🔄 Refresh Outfits"):
             with st.spinner("Loading outfits..."):
-                st.session_state.fitting_room_outfits = get_outfit_images(style_search_terms[style], per_page=10)
+                st.session_state.fitting_room_outfits = get_outfit_images(style_search_terms[style], per_page=5)
 
         outfit_urls = [img["urls"]["regular"] for img in st.session_state.get("fitting_room_outfits", [])]
 
