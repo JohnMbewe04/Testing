@@ -275,7 +275,7 @@ def get_qloo_recommendations(entity_urn):
     url = "https://hackathon.api.qloo.com/v1/insights/recommendations"
     payload = {
         "entities": [entity_urn],
-        "type": "style"
+        "type": "movie"
     }
 
     try:
