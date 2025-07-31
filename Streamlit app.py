@@ -241,6 +241,39 @@ def render_coverflow(images):
 # -------------------------------------------------------------------
 # Helpers
 # -------------------------------------------------------------------
+def get_pexels_images(query, per_page=5):
+    try:
+        headers = {
+            "Authorization": st.secrets["api"]["pexels_key"]
+        }
+        params = {
+            "query": query,
+            "per_page": per_page
+        }
+        resp = requests.get("https://api.pexels.com/v1/search", headers=headers, params=params)
+        if resp.status_code == 200:
+            data = resp.json()
+            return [photo["src"]["medium"] for photo in data.get("photos", [])]
+    except:
+        return []
+    return []
+
+def get_pixabay_images(query, per_page=5):
+    try:
+        params = {
+            "key": st.secrets["api"]["pixabay_key"],
+            "q": query,
+            "image_type": "photo",
+            "per_page": per_page
+        }
+        resp = requests.get("https://pixabay.com/api/", params=params)
+        if resp.status_code == 200:
+            data = resp.json()
+            return [img["webformatURL"] for img in data.get("hits", [])]
+    except:
+        return []
+    return []
+
 def qloo_search_entity(name, entity_type="movie"):
     ENTITY_URN_TYPES = {
         "movie": "urn:entity:movie",
@@ -395,22 +428,38 @@ def get_archetypes_from_media(movie=None, genre=None, music=None):
     return list(arch)
 
 @st.cache_data(ttl=0, show_spinner=False)
-def get_outfit_images(q, per_page=8):
-    # Add random query param and page number to fetch different results
-    random_suffix = random.randint(0, 10000)
-    page_num = random.randint(1, 5)
+def get_outfit_images(q, per_page=5):
+    # 1️⃣ Try Unsplash first
+    try:
+        page_num = random.randint(1, 5)
+        random_suffix = random.randint(0, 10000)
+        query = f"{q} {random_suffix}"
 
-    query = f"{q} {random_suffix}"  # Add randomness to query
-    resp = requests.get(
-        "https://api.unsplash.com/search/photos",
-        headers={"Authorization": f"Client-ID {UNSPLASH_ACCESS_KEY}"},
-        params={
-            "query": query,
-            "per_page": per_page,
-            "page": page_num
-        }
-    )
-    return resp.json().get("results", [])
+        resp = requests.get(
+            "https://api.unsplash.com/search/photos",
+            headers={"Authorization": f"Client-ID {UNSPLASH_ACCESS_KEY}"},
+            params={"query": query, "per_page": per_page, "page": page_num}
+        )
+
+        if resp.status_code == 200:
+            results = resp.json().get("results", [])
+            if results:
+                return results  # Keep Unsplash structure
+    except:
+        pass
+
+    # 2️⃣ Fallback to Pexels
+    fallback_images = get_pexels_images(q, per_page=per_page)
+    if fallback_images:
+        return [{"urls": {"regular": url}} for url in fallback_images]
+
+    # 3️⃣ Fallback to Pixabay
+    fallback_images = get_pixabay_images(q, per_page=per_page)
+    if fallback_images:
+        return [{"urls": {"regular": url}} for url in fallback_images]
+
+    return []  # Final fallback
+
 
 def get_user_country():
     try:
