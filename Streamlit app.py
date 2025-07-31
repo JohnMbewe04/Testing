@@ -281,7 +281,9 @@ def get_qloo_recommendations(entity_urn):
     try:
         resp = requests.post(url, headers=headers, json=payload)
         if resp.status_code == 200:
-            return [rec["name"].lower() for rec in resp.json().get("results", [])]
+            data = resp.json()
+            st.json(data)  # Show full output from Qloo
+            return [rec["name"].lower() for rec in data.get("results", [])]
         else:
             st.error(f"Recommendation failed: {resp.status_code} - {resp.text}")
             return []
@@ -635,6 +637,8 @@ if st.session_state.active_tab == TAB_MEDIA:
                 # Qloo: use either movie or genre as input
                 media_name = movie_input if movie_input else selected_genre
                 entity_urn = qloo_search_entity(movie_input, entity_type="movie")
+                st.info(f"🎯 Qloo Entity URN: {entity_urn}")
+
                 if entity_urn:
                     qloo_styles = get_qloo_recommendations(entity_urn)
                 else:
