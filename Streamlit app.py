@@ -10,7 +10,7 @@ from io import BytesIO
 import numpy as np
 import streamlit.components.v1 as components
 from streamlit_lottie import st_lottie
-from streamlit.components.v1 import html
+from streamlit_js_eval import streamlit_js_eval
 
 # -------------------------------------------------------------------
 # Secrets & API Keys
@@ -159,10 +159,7 @@ def load_lottie_url(url):
     return r.json()
 
 def render_coverflow(images):
-    image_html = ''.join(
-        f"<div class='slide'><img src='{url}' onclick=\"selectImage('{url}')\"></div>"
-        for url in images
-    )
+    image_html = ''.join(f"<div class='slide'><img src='{url}' onclick=\"selectImage('{url}')\"></div>" for url in images)
 
     html_code = f"""
     <style>
@@ -214,7 +211,6 @@ def render_coverflow(images):
             padding: 4px 12px;
             cursor: pointer;
             z-index: 10;
-            user-select: none;
         }}
         .arrow.left {{
             left: 10px;
@@ -223,7 +219,7 @@ def render_coverflow(images):
             right: 10px;
         }}
     </style>
-
+    
     <div class="slider-container">
         <div class="arrow left" onclick="document.getElementById('slider').scrollBy({{left: -220, behavior: 'smooth'}})">&#10094;</div>
         <div class="slider" id="slider">
@@ -234,12 +230,13 @@ def render_coverflow(images):
 
     <script>
     function selectImage(url) {{
-        localStorage.setItem("selectedOutfit", url);
+        const message = {{ type: 'SELECT_OUTFIT', url }};
+        window.parent.postMessage(message, '*');
     }}
     </script>
     """
 
-    html(html_code, height=350)
+    components.html(html_code, height=360, scrolling=False)
     
 # -------------------------------------------------------------------
 # Helpers
@@ -282,19 +279,7 @@ def get_outfit_images(q, per_page=8):
             "page": page_num
         }
     )
-    try:
-        resp.raise_for_status()
-        data = resp.json()
-        return data.get("results", [])
-    except requests.exceptions.HTTPError as e:
-        st.error(f"HTTP error from Unsplash: {e} — {resp.text}")
-    except json.decoder.JSONDecodeError as e:
-        st.error(f"Unsplash response was not valid JSON: {e} — Raw response: {resp.text}")
-    except requests.exceptions.RequestException as e:
-        st.error(f"Request failed: {e}")
-    except Exception as e:
-        st.error(f"Unexpected error: {e}")
-    return []
+    return resp.json().get("results", [])
 
 def get_user_country():
     try:
@@ -518,7 +503,19 @@ for key, default in [
 ]:
     if key not in st.session_state:
         st.session_state[key] = default
-        
+
+# 🛠 Tab Navigation (Make sure this sets from session state)
+tabs = [TAB_MEDIA, TAB_FASHION, TAB_FIT]
+selected_tab = st.radio("Go to:", tabs,
+    index=tabs.index(st.session_state.active_tab),
+    horizontal=True,
+    key="tab_selector"
+)
+# ✅ Only update session_state if the user clicks a different tab
+if selected_tab != st.session_state.active_tab:
+    st.session_state.active_tab = selected_tab
+st.write("---")
+
 if "ready_for_fashion" not in st.session_state:
     st.session_state.ready_for_fashion = False
 
@@ -537,20 +534,8 @@ if "movie_page" not in st.session_state:
 st.set_page_config(page_title="AI StyleTwin", layout="wide")
 st.title("🧠 AI StyleTwin")
 st.caption("Discover your aesthetic twin in media and fashion.")
-st.write("---")
 
-# 🛠 Tab Navigation (Make sure this sets from session state)
-tabs = [TAB_MEDIA, TAB_FASHION, TAB_FIT]
-selected_tab = st.radio("Go to:", tabs,
-    index=tabs.index(st.session_state.active_tab),
-    horizontal=True,
-    key="tab_selector"
-)
-# ✅ Only update session_state if the user clicks a different tab
-if selected_tab != st.session_state.active_tab:
-    st.session_state.active_tab = selected_tab
 st.write("---")
-
 
 # -------------------------------------------------------------------
 # Media Style Match + Music Recommendations
@@ -777,7 +762,7 @@ elif st.session_state.active_tab == TAB_FASHION:
 # -------------------------------------------------------------------
 # AI Fitting Room
 # -------------------------------------------------------------------
-elif st.session_state.active_tab == TAB_FIT:
+else:
     st.header("🧍 Virtual Style Preview")
     style = st.session_state.selected_style
 
@@ -797,10 +782,23 @@ elif st.session_state.active_tab == TAB_FIT:
         outfit_urls = [img["urls"]["regular"] for img in st.session_state.get("fitting_room_outfits", [])]
 
         if outfit_urls:
-            st.markdown("### 🖼️ Swipe Through Looks")
+            st.markdown("### 🖼️ Click to Select Your Look")
             render_coverflow(outfit_urls)
+
+            selected_url = streamlit_js_eval.get_js_value(
+                "window.addEventListener('message', (event) => { if (event.data.type === 'SELECT_OUTFIT') { window.selectedOutfit = event.data.url; } }); window.selectedOutfit;",
+                key="select_outfit_js"
+            )
+
+            if selected_url:
+                st.session_state.selected_outfit_url = selected_url
+
+            if st.session_state.get("selected_outfit_url"):
+                st.image(st.session_state.selected_outfit_url, width=280, caption="✨ Selected Look")
+                if st.button("✅ Save This Look"):
+                    st.success("Saved this outfit for later.")
         else:
-            st.info("No outfits found. Try refreshing.")
+            st.warning("No outfits found. Try refreshing.")
 
         if st.button("🔙 Back to Fashion Tab"):
             st.session_state.active_tab = TAB_FASHION
