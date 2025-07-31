@@ -989,7 +989,7 @@ else:
         # Load outfits initially if not already loaded
         if "fitting_room_outfits" not in st.session_state:
             with st.spinner("Loading outfits..."):
-                st.session_state.fitting_room_outfits = get_outfit_images(style_search_terms[style], per_page=5)
+                st.session_state.fitting_room_outfits = get_outfit_images(style_search_terms[style], per_page=10)
 
         outfit_urls = [img["urls"]["regular"] for img in st.session_state.get("fitting_room_outfits", [])]
 
