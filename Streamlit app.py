@@ -796,28 +796,7 @@ elif st.session_state.active_tab == TAB_FIT:
 
         if outfit_urls:
             st.markdown("### 🖼️ Swipe Through Looks")
-        
             render_coverflow(outfit_urls)
-        
-            # Retrieve selected outfit from JS (localStorage)
-            selected_url = st.experimental_get_query_params().get("selectedOutfit", [None])[0]
-            
-            if selected_url:
-                st.session_state.selected_outfit_url = selected_url
-                st.image(selected_url, width=250, caption="Your Selected Outfit")
-        
-                if st.button("✅ Save This Look"):
-                    st.success("Outfit saved!")
-        
-            else:
-                st.info("Click on an outfit to select it.")
-        
-        else:
-            st.info("No outfits found. Try refreshing.")
-
-            if st.button("✅ Save This Look"):
-                st.success("Outfit saved!")
-
         else:
             st.info("No outfits found. Try refreshing.")
 
