@@ -706,12 +706,6 @@ if st.session_state.active_tab == TAB_MEDIA:
                 else:
                     qloo_styles = get_archetypes_from_media(movie=movie_input or selected_genre)
                     
-                #if not qloo_styles:
-                    #st.info("Attempted to use Qloo API. No valid styles found, falling back to TMDB/Spotify-based recommendation engine.")
-                else:
-                    st.session_state.archetypes = qloo_styles
-                    st.session_state.ready_for_fashion = True
-        
                     if movie_input:
                         st.session_state.similar_movies = get_similar_movies(movie_input)
                     elif selected_genre:
