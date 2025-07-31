@@ -925,30 +925,30 @@ else:
 
     style = st.session_state.get("selected_style")
 
-        if not style:
-            st.warning("Please select a fashion style first in the Fashion & Brands tab.")
-        else:
-            st.success(f"Showing outfits for: **{style.title()}**")
-    
-            # 💡 Create a persistent refresh container
-            refresh_col, _ = st.columns([1, 3])
-            with refresh_col:
-                if st.button("🔄 Refresh Outfits"):
-                    with st.spinner("Loading outfits..."):
-                        st.session_state.fitting_room_outfits = get_outfit_images(style_search_terms[style], per_page=5)
-    
-            # Load outfits on first render if not already loaded
-            if "fitting_room_outfits" not in st.session_state:
+    if not style:
+        st.warning("Please select a fashion style first in the Fashion & Brands tab.")
+    else:
+        st.success(f"Showing outfits for: **{style.title()}**")
+
+        # Persistent Refresh Button
+        refresh_col, _ = st.columns([1, 3])
+        with refresh_col:
+            if st.button("🔄 Refresh Outfits"):
                 with st.spinner("Loading outfits..."):
                     st.session_state.fitting_room_outfits = get_outfit_images(style_search_terms[style], per_page=5)
-    
-            outfit_urls = [img["urls"]["regular"] for img in st.session_state.get("fitting_room_outfits", [])]
-    
-            if outfit_urls:
-                st.markdown("### 👗 Browse the looks below:")
-                render_coverflow(outfit_urls)
-            else:
-                st.warning("No outfits found for this style.")
+
+        # Load outfits initially if not already loaded
+        if "fitting_room_outfits" not in st.session_state:
+            with st.spinner("Loading outfits..."):
+                st.session_state.fitting_room_outfits = get_outfit_images(style_search_terms[style], per_page=5)
+
+        outfit_urls = [img["urls"]["regular"] for img in st.session_state.get("fitting_room_outfits", [])]
+
+        if outfit_urls:
+            st.markdown("### 👗 Browse the looks below:")
+            render_coverflow(outfit_urls)
+        else:
+            st.warning("No outfits found for this style.")
 
         if st.button("🔙 Back to Fashion Tab"):
             st.session_state.active_tab = TAB_FASHION
