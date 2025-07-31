@@ -4,3 +4,4 @@ rembg
 onnxruntime
 onnx
 timm
+streamlit_js_eval
