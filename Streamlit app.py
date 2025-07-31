@@ -247,7 +247,7 @@ def qloo_search_entity(name, entity_type="movie"):
     }
     url = "https://hackathon.api.qloo.com/search"
     params = {
-        "query": name,
+        "query": name.strip().title(),
         "types": f"urn:entity:{entity_type}"
     }
 
@@ -256,7 +256,9 @@ def qloo_search_entity(name, entity_type="movie"):
         if resp.status_code == 200:
             results = resp.json().get("results", [])
             if results:
-                return results[0].get("id")  # Return the first match's URN
+                st.write("Qloo Search Results:")
+                st.json(results)
+                return results[0].get("id")
             else:
                 st.warning("Qloo search returned no results.")
                 return None
@@ -266,6 +268,7 @@ def qloo_search_entity(name, entity_type="movie"):
     except Exception as e:
         st.error(f"Search error: {e}")
         return None
+
 
 def get_qloo_recommendations(entity_urn):
     headers = {
