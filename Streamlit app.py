@@ -241,6 +241,29 @@ def render_coverflow(images):
 # -------------------------------------------------------------------
 # Helpers
 # -------------------------------------------------------------------
+def get_qloo_related_styles(domain, name, limit=8):
+    url = f"https://api.qloo.com/v1/{domain}/related"
+    headers = {
+        "Content-Type": "application/json",
+        "X-API-KEY": QLOO_API_KEY
+    }
+    payload = {
+        "name": name,
+        "limit": limit
+    }
+
+    try:
+        response = requests.post(url, headers=headers, json=payload)
+        if response.status_code == 200:
+            items = response.json().get("results", [])
+            return [item["name"].lower() for item in items]
+        else:
+            st.warning("Qloo API error: " + str(response.status_code))
+            return []
+    except Exception as e:
+        st.error(f"Failed to fetch Qloo styles: {e}")
+        return []
+
 def get_archetypes_from_media(movie=None, genre=None, music=None):
     raw_tags = []
     if movie:
@@ -558,22 +581,24 @@ if st.session_state.active_tab == TAB_MEDIA:
             if not movie_input and not selected_genre:
                 st.warning("Please enter a movie title or genre.")
             else:
-                st.session_state.archetypes = get_archetypes_from_media(
-                    movie=movie_input or None,
-                    genre=selected_genre or None,
-                    music=None
-                )
+                # Qloo: use either movie or genre as input
+                media_name = movie_input if movie_input else selected_genre
+                qloo_styles = get_qloo_related_styles("movies", media_name, limit=6)
         
-                # 🎬 Fallback logic for similar movies
-                if movie_input:
-                    st.session_state.similar_movies = get_similar_movies(movie_input)
-                elif selected_genre:
-                    st.session_state.similar_movies = get_movies_by_genre(selected_genre, st.session_state.user_country)
+                if not qloo_styles:
+                    st.warning("No styles returned from Qloo.")
+                else:
+                    st.success("Got style recommendations from Qloo!")
+                    st.session_state.archetypes = qloo_styles
+                    st.session_state.ready_for_fashion = True
         
-                st.session_state.selected_style = None
-                st.session_state.ready_for_fashion = True
-                st.success("Style archetypes and movie recommendations loaded!")
-                st.session_state.movie_page = 1
+                    if movie_input:
+                        st.session_state.similar_movies = get_similar_movies(movie_input)
+                    elif selected_genre:
+                        st.session_state.similar_movies = get_movies_by_genre(selected_genre, st.session_state.user_country)
+        
+                    st.session_state.selected_style = None
+                    st.session_state.movie_page = 1
 
         if st.session_state.similar_movies:
             st.markdown("### 🎬 You Might Also Like")
@@ -670,31 +695,39 @@ if st.session_state.active_tab == TAB_MEDIA:
             if not song_input:
                 st.warning("Please enter a song name first.")
             else:
-                with st.spinner("🔍 Getting Spotify previews..."):
+                with st.spinner("🔍 Getting Spotify previews and fashion styles..."):
                     client_id = st.secrets["spotify"]["client_id"]
                     client_secret = st.secrets["spotify"]["client_secret"]
                     token = get_spotify_token(client_id, client_secret)
-        
+            
                     if not token:
                         st.error("Failed to retrieve Spotify token.")
                     else:
                         genre_key, display_song_name = detect_spotify_genre(song_input, token)
-        
+            
                         if not genre_key:
                             st.error("Could not detect genre or no genre match found.")
                         else:
                             st.success(f"Detected genre: **{genre_key.title()}**")
-        
-                            similar_tracks = get_similar_songs(song_input)
-                            if not similar_tracks:
-                                st.error("No similar tracks found.")
+            
+                            # 🎯 Get Qloo style recommendations from this song name
+                            qloo_styles = get_qloo_related_styles("music", song_input, limit=6)
+                            if not qloo_styles:
+                                st.warning("No styles returned from Qloo.")
                             else:
+                                st.session_state.archetypes = qloo_styles
+                                st.session_state.ready_for_fashion = True
+                                st.success("Styles recommended based on music!")
+            
+                            # Optional: show Spotify previews
+                            similar_tracks = get_similar_songs(song_input)
+                            if similar_tracks:
                                 spotify_enriched = []
                                 for track in similar_tracks:
                                     enriched = get_spotify_song_data(f"{track['title']} {track['artist']}", token, limit=1)
                                     if enriched:
                                         spotify_enriched.append(enriched[0])
-        
+            
                                 for song in spotify_enriched:
                                     cols = st.columns([1, 4])
                                     with cols[0]:
@@ -706,6 +739,7 @@ if st.session_state.active_tab == TAB_MEDIA:
                                             st.audio(song["preview_url"], format="audio/mp3")
                                         st.markdown(f"[🔗 Listen on Spotify]({song['spotify_url']})")
                                     st.write("---")
+
         
                                 # 🎯 Auto-generate fashion archetypes from genre
                                 st.session_state.archetypes = get_archetypes_from_media(music=genre_key)
@@ -760,45 +794,29 @@ elif st.session_state.active_tab == TAB_FASHION:
             st.rerun()
 
 # -------------------------------------------------------------------
-# AI Fitting Room
+# Style view
 # -------------------------------------------------------------------
 else:
-    st.header("🧍 Virtual Style Preview")
-    style = st.session_state.selected_style
+    st.header("🧍 Style View")
+
+    style = st.session_state.get("selected_style")
 
     if not style:
-        st.warning("First, pick a look in the Fashion tab.")
+        st.warning("Please select a fashion style first in the Fashion & Brands tab.")
     else:
-        st.success(f"Previewing: {style.title()} Style")
+        st.success(f"Showing outfits for: **{style.title()}**")
 
-        if "fitting_room_outfits" not in st.session_state or st.button("🔄 Refresh Looks"):
-            with st.spinner("Loading style options..."):
-                anim = load_lottie_url("https://assets4.lottiefiles.com/packages/lf20_puciaact.json")
-                if anim:
-                    st_lottie(anim, height=180)
-                time.sleep(1)
+        if "fitting_room_outfits" not in st.session_state or st.button("🔄 Refresh Outfits"):
+            with st.spinner("Loading outfits..."):
                 st.session_state.fitting_room_outfits = get_outfit_images(style_search_terms[style], per_page=10)
 
         outfit_urls = [img["urls"]["regular"] for img in st.session_state.get("fitting_room_outfits", [])]
 
         if outfit_urls:
-            st.markdown("### 🖼️ Click to Select Your Look")
+            st.markdown("### 👗 Browse the looks below:")
             render_coverflow(outfit_urls)
-
-            selected_url = streamlit_js_eval.get_js_value(
-                "window.addEventListener('message', (event) => { if (event.data.type === 'SELECT_OUTFIT') { window.selectedOutfit = event.data.url; } }); window.selectedOutfit;",
-                key="select_outfit_js"
-            )
-
-            if selected_url:
-                st.session_state.selected_outfit_url = selected_url
-
-            if st.session_state.get("selected_outfit_url"):
-                st.image(st.session_state.selected_outfit_url, width=280, caption="✨ Selected Look")
-                if st.button("✅ Save This Look"):
-                    st.success("Saved this outfit for later.")
         else:
-            st.warning("No outfits found. Try refreshing.")
+            st.warning("No outfits found for this style.")
 
         if st.button("🔙 Back to Fashion Tab"):
             st.session_state.active_tab = TAB_FASHION
