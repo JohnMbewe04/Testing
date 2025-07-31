@@ -731,12 +731,10 @@ if st.session_state.active_tab == TAB_MEDIA:
                 else:
                     st.warning("Qloo search failed. Falling back to TMDB genre mapping.")
                     qloo_styles = get_archetypes_from_media(movie=movie_input or selected_genre)
-
-                else:
-                    qloo_styles = []
                     
                 if not qloo_styles:
                     st.warning("No styles returned from Qloo.")
+                    st.info("Attempted to use Qloo API. No valid styles found, falling back to TMDB/Spotify-based recommendation engine.")
                 else:
                     st.success("Got style recommendations from Qloo!")
                     st.session_state.archetypes = qloo_styles
@@ -867,6 +865,7 @@ if st.session_state.active_tab == TAB_MEDIA:
                             st.session_state.ready_for_fashion = True
                         else:
                             st.warning("Qloo returned no styles. Falling back to genre-based tags.")
+                            st.info("Attempted to use Qloo API. No valid styles found, falling back to TMDB/Spotify-based recommendation engine.")
                             fallback_styles = get_archetypes_from_media(music=genre_key)
                             if fallback_styles:
                                 st.success("🛟 Fallback fashion styles loaded from genre mapping.")
