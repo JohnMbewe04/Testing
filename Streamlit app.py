@@ -262,17 +262,12 @@ def qloo_search_entity(name, entity_type="movie"):
         if resp.status_code == 200:
             results = resp.json().get("results", [])
             if results:
-                st.write("Qloo Search Results:")
-                st.json(results)
                 return results[0].get("id")
             else:
-                st.warning("Qloo search returned no results.")
                 return None
         else:
-            st.error(f"Search failed: {resp.status_code} - {resp.text}")
             return None
     except Exception as e:
-        st.error(f"Search error: {e}")
         return None
 
 
@@ -291,13 +286,10 @@ def get_qloo_recommendations(entity_urn):
         resp = requests.post(url, headers=headers, json=payload)
         if resp.status_code == 200:
             data = resp.json()
-            st.json(data)  # Show full output from Qloo
             return [rec["name"].lower() for rec in data.get("results", [])]
         else:
-            st.error(f"Recommendation failed: {resp.status_code} - {resp.text}")
             return []
     except Exception as e:
-        st.error(f"Recommendation error: {e}")
         return []
 
 def get_style_tags_from_qloo(input_type, input_value, api_key, limit=5):
@@ -321,26 +313,18 @@ def get_style_tags_from_qloo(input_type, input_value, api_key, limit=5):
         "name": input_value,
         "limit": 1
     }
-
-    st.write("🔎 Qloo Payload:", payload)
-    st.write("🔗 Qloo Search URL:", url)
-    st.write("📡 Qloo Headers:", headers)
-
     search_response = requests.post(url, headers=headers, json=payload)
-    st.write("🔁 Qloo Search Response:", search_response.status_code, search_response.text)
 
     if search_response.status_code != 200:
         return []
 
     entities = search_response.json().get("results", [])
-    st.write("🔍 Qloo Entities Returned:", entities)
     
     if not entities:
         return []
 
     entity = entities[0]
     entity_id = entity.get("entity_id")
-    print("🎯 Qloo Entity ID:", entity_id)
 
     if not entity_id:
         return []
@@ -354,7 +338,6 @@ def get_style_tags_from_qloo(input_type, input_value, api_key, limit=5):
 
     related_response = requests.post(related_url, headers=headers, json=payload)
     if related_response.status_code != 200:
-        print("Qloo related call failed:", related_response.status_code, related_response.text)
         return []
 
     related_entities = related_response.json().get("results", [])
@@ -380,18 +363,13 @@ def get_qloo_related_styles(domain, name, limit=8):
     }
 
     try:
-        st.write("🔍 Qloo Debug:")
-        st.json({"url": url, "headers": headers, "payload": payload})
-
         response = requests.post(url, headers=headers, json=payload)
         if response.status_code == 200:
             items = response.json().get("results", [])
             return [item["name"].lower() for item in items]
         else:
-            st.warning(f"Qloo API error: {response.status_code} - {response.text}")
             return []
     except Exception as e:
-        st.error(f"Failed to fetch Qloo styles: {e}")
         return []
 
 def get_archetypes_from_media(movie=None, genre=None, music=None):
@@ -714,7 +692,6 @@ if st.session_state.active_tab == TAB_MEDIA:
                 # Qloo: use either movie or genre as input
                 media_name = movie_input if movie_input else selected_genre
                 entity_urn = qloo_search_entity(movie_input, entity_type="movie")
-                st.info(f"🎯 Qloo Entity URN: {entity_urn}")
 
                 qloo_styles = []
 
@@ -723,20 +700,15 @@ if st.session_state.active_tab == TAB_MEDIA:
                 
                     if style_tags:
                         style_prompt = ", ".join(style_tags[:5])
-                        st.write(f"🎨 Qloo Style Prompt: {style_prompt}")
                         qloo_styles = style_tags
                     else:
-                        st.warning("Qloo returned no styles. Falling back to TMDB genre mapping.")
                         qloo_styles = get_archetypes_from_media(movie=movie_input)
                 else:
-                    st.warning("Qloo search failed. Falling back to TMDB genre mapping.")
                     qloo_styles = get_archetypes_from_media(movie=movie_input or selected_genre)
                     
-                if not qloo_styles:
-                    st.warning("No styles returned from Qloo.")
-                    st.info("Attempted to use Qloo API. No valid styles found, falling back to TMDB/Spotify-based recommendation engine.")
+                #if not qloo_styles:
+                    #st.info("Attempted to use Qloo API. No valid styles found, falling back to TMDB/Spotify-based recommendation engine.")
                 else:
-                    st.success("Got style recommendations from Qloo!")
                     st.session_state.archetypes = qloo_styles
                     st.session_state.ready_for_fashion = True
         
@@ -860,15 +832,12 @@ if st.session_state.active_tab == TAB_MEDIA:
                         qloo_styles = get_qloo_related_styles("music", song_input, limit=6)
                         
                         if qloo_styles:
-                            st.success("🎨 Qloo styles loaded!")
                             st.session_state.archetypes = qloo_styles
                             st.session_state.ready_for_fashion = True
                         else:
-                            st.warning("Qloo returned no styles. Falling back to genre-based tags.")
                             st.info("Attempted to use Qloo API. No valid styles found, falling back to TMDB/Spotify-based recommendation engine.")
                             fallback_styles = get_archetypes_from_media(music=genre_key)
                             if fallback_styles:
-                                st.success("🛟 Fallback fashion styles loaded from genre mapping.")
                                 st.session_state.archetypes = fallback_styles
                                 st.session_state.ready_for_fashion = True
                             else:
