@@ -241,6 +241,54 @@ def render_coverflow(images):
 # -------------------------------------------------------------------
 # Helpers
 # -------------------------------------------------------------------
+def qloo_search_entity(name, entity_type="movie"):
+    headers = {
+        "X-API-Key": QLOO_API_KEY
+    }
+    url = "https://hackathon.api.qloo.com/search"
+    params = {
+        "query": name,
+        "types": f"urn:entity:{entity_type}"
+    }
+
+    try:
+        resp = requests.get(url, headers=headers, params=params)
+        if resp.status_code == 200:
+            results = resp.json().get("results", [])
+            if results:
+                return results[0].get("id")  # Return the first match's URN
+            else:
+                st.warning("Qloo search returned no results.")
+                return None
+        else:
+            st.error(f"Search failed: {resp.status_code} - {resp.text}")
+            return None
+    except Exception as e:
+        st.error(f"Search error: {e}")
+        return None
+
+def get_qloo_recommendations(entity_urn):
+    headers = {
+        "X-API-Key": QLOO_API_KEY,
+        "Content-Type": "application/json"
+    }
+    url = "https://hackathon.api.qloo.com/v1/insights/recommendations"
+    payload = {
+        "entities": [entity_urn],
+        "type": "style"
+    }
+
+    try:
+        resp = requests.post(url, headers=headers, json=payload)
+        if resp.status_code == 200:
+            return [rec["name"].lower() for rec in resp.json().get("results", [])]
+        else:
+            st.error(f"Recommendation failed: {resp.status_code} - {resp.text}")
+            return []
+    except Exception as e:
+        st.error(f"Recommendation error: {e}")
+        return []
+
 def get_qloo_related_styles(domain, name, limit=8):
     url = f"https://hackathon.api.qloo.com/v1/{domain}/related"
     headers = {
@@ -586,7 +634,12 @@ if st.session_state.active_tab == TAB_MEDIA:
             else:
                 # Qloo: use either movie or genre as input
                 media_name = movie_input if movie_input else selected_genre
-                qloo_styles = get_qloo_related_styles("movies", media_name, limit=6)
+                entity_urn = qloo_search_entity(movie_input, entity_type="movie")
+                if entity_urn:
+                    qloo_styles = get_qloo_recommendations(entity_urn)
+                else:
+                    qloo_styles = []
+
         
                 if not qloo_styles:
                     st.warning("No styles returned from Qloo.")
