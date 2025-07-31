@@ -253,6 +253,9 @@ def get_qloo_related_styles(domain, name, limit=8):
     }
 
     try:
+        st.write("🔍 Qloo Debug:")
+        st.json({"url": url, "headers": headers, "payload": payload})
+
         response = requests.post(url, headers=headers, json=payload)
         if response.status_code == 200:
             items = response.json().get("results", [])
@@ -263,9 +266,6 @@ def get_qloo_related_styles(domain, name, limit=8):
     except Exception as e:
         st.error(f"Failed to fetch Qloo styles: {e}")
         return []
-        st.code(headers)
-
-
 
 def get_archetypes_from_media(movie=None, genre=None, music=None):
     raw_tags = []
