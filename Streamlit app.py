@@ -513,7 +513,7 @@ def detect_spotify_genre(song_name, token):
 # -------------------------------------------------------------------
 TAB_MEDIA   = "🎬 Media Style Match"
 TAB_FASHION = "👗 Fashion & Brands"
-TAB_FIT     = "🧍 AI Fitting Room"
+TAB_FIT     = "🧍 Style View"
 
 for key, default in [
     ("active_tab", TAB_MEDIA),
