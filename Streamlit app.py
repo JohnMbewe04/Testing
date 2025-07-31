@@ -284,14 +284,16 @@ def get_outfit_images(q, per_page=8):
     )
     try:
         resp.raise_for_status()
-        return resp.json().get("results", [])
+        data = resp.json()
+        return data.get("results", [])
     except requests.exceptions.HTTPError as e:
         st.error(f"HTTP error from Unsplash: {e} — {resp.text}")
+    except json.decoder.JSONDecodeError as e:
+        st.error(f"Unsplash response was not valid JSON: {e} — Raw response: {resp.text}")
     except requests.exceptions.RequestException as e:
         st.error(f"Request failed: {e}")
     except Exception as e:
         st.error(f"Unexpected error: {e}")
-    
     return []
 
 def get_user_country():
