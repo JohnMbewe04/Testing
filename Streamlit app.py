@@ -716,16 +716,22 @@ if st.session_state.active_tab == TAB_MEDIA:
                 entity_urn = qloo_search_entity(movie_input, entity_type="movie")
                 st.info(f"🎯 Qloo Entity URN: {entity_urn}")
 
+                qloo_styles = []
+
                 if entity_urn:
                     style_tags = get_style_tags_from_qloo("movie", movie_input, QLOO_API_KEY)
                 
                     if style_tags:
-                        style_prompt = ", ".join(style_tags[:5])  # use top 5 tags
-                        st.write(f"🎨 Style Prompt: {style_prompt}")
-                        qloo_styles = style_tags  # these will drive the archetype matching
+                        style_prompt = ", ".join(style_tags[:5])
+                        st.write(f"🎨 Qloo Style Prompt: {style_prompt}")
+                        qloo_styles = style_tags
                     else:
-                        st.warning("No fashion styles could be extracted.")
-                        qloo_styles = get_qloo_recommendations(entity_urn)
+                        st.warning("Qloo returned no styles. Falling back to TMDB genre mapping.")
+                        qloo_styles = get_archetypes_from_media(movie=movie_input)
+                else:
+                    st.warning("Qloo search failed. Falling back to TMDB genre mapping.")
+                    qloo_styles = get_archetypes_from_media(movie=movie_input or selected_genre)
+
                 else:
                     qloo_styles = []
                     
@@ -850,19 +856,25 @@ if st.session_state.active_tab == TAB_MEDIA:
                         genre_key, display_song_name = detect_spotify_genre(song_input, token)
             
                         if not genre_key:
-                            st.error("Could not detect genre or no genre match found.")
+                            st.warning("Could not detect genre from Spotify.")
+                            genre_key = None
+                        
+                        qloo_styles = get_qloo_related_styles("music", song_input, limit=6)
+                        
+                        if qloo_styles:
+                            st.success("🎨 Qloo styles loaded!")
+                            st.session_state.archetypes = qloo_styles
+                            st.session_state.ready_for_fashion = True
                         else:
-                            st.success(f"Detected genre: **{genre_key.title()}**")
-            
-                            # 🎯 Get Qloo style recommendations from this song name
-                            qloo_styles = get_qloo_related_styles("music", song_input, limit=6)
-                            if not qloo_styles:
-                                st.warning("No styles returned from Qloo.")
-                            else:
-                                st.session_state.archetypes = qloo_styles
+                            st.warning("Qloo returned no styles. Falling back to genre-based tags.")
+                            fallback_styles = get_archetypes_from_media(music=genre_key)
+                            if fallback_styles:
+                                st.success("🛟 Fallback fashion styles loaded from genre mapping.")
+                                st.session_state.archetypes = fallback_styles
                                 st.session_state.ready_for_fashion = True
-                                st.success("Styles recommended based on music!")
-            
+                            else:
+                                st.error("Could not detect any fashion styles.")
+                                
                             # Optional: show Spotify previews
                             similar_tracks = get_similar_songs(song_input)
                             if similar_tracks:
