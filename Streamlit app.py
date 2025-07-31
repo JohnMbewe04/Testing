@@ -322,12 +322,19 @@ def get_style_tags_from_qloo(input_type, input_value, api_key, limit=5):
         "limit": 1
     }
 
+    st.write("🔎 Qloo Payload:", payload)
+    st.write("🔗 Qloo Search URL:", url)
+    st.write("📡 Qloo Headers:", headers)
+
     search_response = requests.post(url, headers=headers, json=payload)
+    st.write("🔁 Qloo Search Response:", search_response.status_code, search_response.text)
+
     if search_response.status_code != 200:
-        print("Qloo search failed:", search_response.status_code, search_response.text)
         return []
 
     entities = search_response.json().get("results", [])
+    st.write("🔍 Qloo Entities Returned:", entities)
+    
     if not entities:
         return []
 
@@ -710,22 +717,18 @@ if st.session_state.active_tab == TAB_MEDIA:
                 st.info(f"🎯 Qloo Entity URN: {entity_urn}")
 
                 if entity_urn:
-                    # 🎯 Try extracting style tags directly from Qloo
                     style_tags = get_style_tags_from_qloo("movie", movie_input, QLOO_API_KEY)
                 
                     if style_tags:
-                        style_prompt = ", ".join(style_tags[:5])
-                        st.write(f"🎨 Style Prompt (Qloo tags): {style_prompt}")
-                        qloo_styles = style_tags
+                        style_prompt = ", ".join(style_tags[:5])  # use top 5 tags
+                        st.write(f"🎨 Style Prompt: {style_prompt}")
+                        qloo_styles = style_tags  # these will drive the archetype matching
                     else:
-                        st.warning("No fashion styles could be extracted from Qloo tags.")
-                        # fallback to recommendations if style tags fail
+                        st.warning("No fashion styles could be extracted.")
                         qloo_styles = get_qloo_recommendations(entity_urn)
                 else:
                     qloo_styles = []
-
-
-        
+                    
                 if not qloo_styles:
                     st.warning("No styles returned from Qloo.")
                 else:
