@@ -294,6 +294,67 @@ def get_qloo_recommendations(entity_urn):
         st.error(f"Recommendation error: {e}")
         return []
 
+def get_style_tags_from_qloo(input_type, input_value, api_key, limit=5):
+    endpoint_map = {
+        "movie": "movies",
+        "music": "music",
+        "genre": "tags"
+    }
+
+    # Step 1: Search the entity
+    entity_type = endpoint_map.get(input_type)
+    if not entity_type:
+        return []
+
+    url = f"https://hackathon.api.qloo.com/v1/search"
+    headers = {
+        "X-API-Key": api_key,
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "name": input_value,
+        "limit": 1
+    }
+
+    search_response = requests.post(url, headers=headers, json=payload)
+    if search_response.status_code != 200:
+        print("Qloo search failed:", search_response.status_code, search_response.text)
+        return []
+
+    entities = search_response.json().get("results", [])
+    if not entities:
+        return []
+
+    entity = entities[0]
+    entity_id = entity.get("entity_id")
+    print("🎯 Qloo Entity ID:", entity_id)
+
+    if not entity_id:
+        return []
+
+    # Step 2: Get related entities
+    related_url = f"https://hackathon.api.qloo.com/v1/{entity_type}/related"
+    payload = {
+        "entity_id": entity_id,
+        "limit": limit
+    }
+
+    related_response = requests.post(related_url, headers=headers, json=payload)
+    if related_response.status_code != 200:
+        print("Qloo related call failed:", related_response.status_code, related_response.text)
+        return []
+
+    related_entities = related_response.json().get("results", [])
+
+    # Step 3: Extract and combine tags
+    style_tags = set()
+    for entity in related_entities:
+        for tag in entity.get("tags", []):
+            style_tags.add(tag.get("name"))
+
+    return list(style_tags)
+
+
 def get_qloo_related_styles(domain, name, limit=8):
     url = f"https://hackathon.api.qloo.com/v1/{domain}/related"
     headers = {
@@ -643,9 +704,20 @@ if st.session_state.active_tab == TAB_MEDIA:
                 st.info(f"🎯 Qloo Entity URN: {entity_urn}")
 
                 if entity_urn:
-                    qloo_styles = get_qloo_recommendations(entity_urn)
+                    # 🎯 Try extracting style tags directly from Qloo
+                    style_tags = get_style_tags_from_qloo("movie", movie_input, QLOO_API_KEY)
+                
+                    if style_tags:
+                        style_prompt = ", ".join(style_tags[:5])
+                        st.write(f"🎨 Style Prompt (Qloo tags): {style_prompt}")
+                        qloo_styles = style_tags
+                    else:
+                        st.warning("No fashion styles could be extracted from Qloo tags.")
+                        # fallback to recommendations if style tags fail
+                        qloo_styles = get_qloo_recommendations(entity_urn)
                 else:
                     qloo_styles = []
+
 
         
                 if not qloo_styles:
