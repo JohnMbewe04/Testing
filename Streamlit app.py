@@ -689,23 +689,29 @@ if st.session_state.active_tab == TAB_MEDIA:
             if not movie_input and not selected_genre:
                 st.warning("Please enter a movie title or genre.")
             else:
-                # Qloo: use either movie or genre as input
                 media_name = movie_input if movie_input else selected_genre
-                entity_urn = qloo_search_entity(movie_input, entity_type="movie")
-
+                entity_urn = qloo_search_entity(media_name, entity_type="movie")
+        
                 qloo_styles = []
-
+                used_fallback = False
+        
                 if entity_urn:
-                    style_tags = get_style_tags_from_qloo("movie", movie_input, QLOO_API_KEY)
-                
+                    style_tags = get_style_tags_from_qloo("movie", media_name, QLOO_API_KEY)
                     if style_tags:
-                        style_prompt = ", ".join(style_tags[:5])
                         qloo_styles = style_tags
                     else:
-                        qloo_styles = get_archetypes_from_media(movie=movie_input)
+                        used_fallback = True
                 else:
+                    used_fallback = True
+        
+                if used_fallback:
+                    st.info("Attempted to use Qloo API. No valid styles found, falling back to TMDB/Spotify-based recommendation engine.")
                     qloo_styles = get_archetypes_from_media(movie=movie_input or selected_genre)
-                    
+        
+                if qloo_styles:
+                    st.session_state.archetypes = qloo_styles
+                    st.session_state.ready_for_fashion = True
+        
                     if movie_input:
                         st.session_state.similar_movies = get_similar_movies(movie_input)
                     elif selected_genre:
